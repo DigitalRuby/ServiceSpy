@@ -1,3 +1,3 @@
-# Service Spy - Deadly Simple Service Registration and Discovery #
+# Service Spy - Deadly Simple Service Discovery #
 
 [![Github Sponsorship](.github/github_sponsor_btn.svg)](https://github.com/sponsors/jjxtra)
