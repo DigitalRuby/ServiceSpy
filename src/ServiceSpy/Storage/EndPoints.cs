@@ -13,9 +13,15 @@ public sealed class EndPoints
     public string Name { get; }
 
     /// <summary>
-    /// The end points available for the service
+    /// Get all the end points available for the service
     /// </summary>
-    public IEnumerable<EndPoint> All => endPoints.Values;
+    public IReadOnlyCollection<EndPoint> GetAllEndPoints()
+    {
+        lock (endPoints)
+        {
+            return endPoints.Values.ToArray();
+        }
+    }
 
     /// <summary>
     /// Constructor
