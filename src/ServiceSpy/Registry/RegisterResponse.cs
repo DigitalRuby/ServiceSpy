@@ -6,12 +6,7 @@
 public struct RegisterResponse
 {
     /// <summary>
-    /// Whether there was a change
+    /// Changes
     /// </summary>
-    public bool Change { get; set; }
-
-    /// <summary>
-    /// The old end point or null if no previou end point
-    /// </summary>
-    public EndPoint? OldEndPoint { get; init; }
+    public IReadOnlyDictionary<EndPoint, EndPoint?> Changes { get; init; }
 }

@@ -13,26 +13,31 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
         lock (allEndPoints)
         {
             allEndPoints.Remove(name, out EndPoints? endPoints);
-            return Task.FromResult<IReadOnlyCollection<EndPoint>?>(endPoints?.All.ToArray());
+            return Task.FromResult<IReadOnlyCollection<EndPoint>?>(endPoints?.GetAllEndPoints());
         }
     }
 
     /// <inheritdoc />
-    public Task<bool> DeleteAsync(string name, EndPoint endPoint)
+    public Task<(bool, bool)> DeleteAsync(string name, IReadOnlyCollection<EndPoint> endPoints)
     {
         lock (allEndPoints)
         {
-            if (allEndPoints.TryGetValue(name, out EndPoints? endPoints))
+            bool removed = false;
+            bool empty = false;
+            if (this.allEndPoints.TryGetValue(name, out EndPoints? allEndPoints))
             {
-                bool removed = endPoints.Remove(endPoint, out bool empty);
+                foreach (var endPoint in endPoints)
+                {
+                    removed |= allEndPoints.Remove(endPoint, out bool _empty);
+                    empty |= _empty;
+                }
                 if (empty)
                 {
-                    allEndPoints.Remove(name);
+                    this.allEndPoints.Remove(name);
                 }
-                return Task.FromResult<bool>(removed);
             }
+            return Task.FromResult<(bool, bool)>((removed, empty));
         }
-        return Task.FromResult<bool>(false);
     }
 
     /// <inheritdoc />
@@ -49,16 +54,31 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<bool> UpsertAsync(string name, EndPoint endPoint, out EndPoint? oldEndPoint)
+    public Task<IReadOnlyDictionary<EndPoint, EndPoint?>> UpsertAsync(string name, IReadOnlyCollection<EndPoint> endPoints)
     {
         lock (allEndPoints)
         {
-            if (!allEndPoints.TryGetValue(name, out EndPoints? endPoints))
+            // make end points if we need to
+            if (!allEndPoints.TryGetValue(name, out EndPoints? currentEndPoints))
             {
-                allEndPoints[name] = endPoints = new(name);
+                allEndPoints[name] = currentEndPoints = new(name);
             }
-            bool change = endPoints.Upsert(endPoint, out oldEndPoint);
-            return Task.FromResult<bool>(change);
+
+            // results
+            var results = new Dictionary<EndPoint, EndPoint?>();
+
+            // upsert each end point
+            foreach (var endPoint in endPoints)
+            {
+                bool change = currentEndPoints.Upsert(endPoint, out EndPoint? oldEndPoint);
+                if (change)
+                {
+                    results[endPoint] = oldEndPoint;
+                }
+            }
+
+            // return back the changes
+            return Task.FromResult<IReadOnlyDictionary<EndPoint, EndPoint?>>(results);
         }
     }
 }

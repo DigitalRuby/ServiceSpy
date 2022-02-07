@@ -17,49 +17,74 @@ public static class RegistryFactory
 internal sealed class Registry : IRegistry
 {
     private readonly IEndPointStorage storage;
+    private readonly HashSet<INotificationHandler> handlers = new();
+
+    public Registry(IEndPointStorage storage) : this(storage, Array.Empty<INotificationHandler>())
+    {
+    }
 
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="storage">Storage</param>
-    public Registry(IEndPointStorage storage)
+    /// <param name="handlers">Handlers</param>
+    public Registry(IEndPointStorage storage, IEnumerable<INotificationHandler> handlers)
     {
         this.storage = storage;
+        foreach (var handler in handlers)
+        {
+            AddNotificationHandler(handler);
+        }
     }
 
     /// <inheritdoc />
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
-        bool change = await storage.UpsertAsync(request.Name, request.EndPoint, out EndPoint? oldEndPoint);
-        if (change)
+        var results = await storage.UpsertAsync(request.Name, request.EndPoints);
+        if (results is not null && results.Count != 0)
         {
-            EndPointChanged?.Invoke(new EndPointChangedEvent
+            lock (handlers)
             {
-                Name = request.Name,
-                OldEndPoint = oldEndPoint,
-                EndPoint = request.EndPoint
-            });
+                foreach (var handler in handlers)
+                {
+                    handler.SendEndPointChanged(new EndPointChangedEvent
+                    {
+                        Name = request.Name,
+                        Changes = results
+                    });
+                }
+            }
         }
         return new RegisterResponse
         {
-            Change = change,
-            OldEndPoint = oldEndPoint
+            Changes = new Dictionary<EndPoint, EndPoint?>()
         };
     }
 
     /// <inheritdoc />
     public async Task<UnregisterResponse> UnregisterAsync(UnregisterRequest request)
     {
-        bool deleted = await storage.DeleteAsync(request.Name, request.EndPoint);
+        (bool deleted, bool all) = await storage.DeleteAsync(request.Name, request.EndPoints);
         if (deleted)
         {
-            EndPointDeleted?.Invoke(new EndPointDeletedEvent
+            lock (handlers)
             {
-                Name = request.Name,
-                EndPoint = request.EndPoint
-            });
+                foreach (var handler in handlers)
+                {
+                    handler.SendEndPointDeleted(new EndPointDeletedEvent
+                    {
+                        Name = request.Name,
+                        EndPoints = request.EndPoints,
+                        All = all
+                    });
+                }
+            }
         }
-        return new UnregisterResponse { Deleted = deleted };
+        return new UnregisterResponse
+        {
+            All = all,
+            Deleted = deleted
+        };
     }
 
     /// <inheritdoc />
@@ -68,15 +93,23 @@ internal sealed class Registry : IRegistry
         var endPointsDeleted = await storage.DeleteAllAsync(request.Name);
         if (endPointsDeleted is not null)
         {
-            foreach (var endPoint in endPointsDeleted)
+            lock (handlers)
             {
-                EndPointDeleted?.Invoke(new EndPointDeletedEvent
+                foreach (var handler in handlers)
                 {
-                    Name = request.Name, EndPoint = endPoint
-                });
+                    handler.SendEndPointDeleted(new EndPointDeletedEvent
+                    {
+                        Name = request.Name,
+                        EndPoints = endPointsDeleted,
+                        All = true
+                    });
+                }
             }
         }
-        return new UnregisterAllResponse { EndPoints = endPointsDeleted };
+        return new UnregisterAllResponse
+        {
+            EndPoints = endPointsDeleted
+        };
     }
 
     /// <inheritdoc />
@@ -86,9 +119,36 @@ internal sealed class Registry : IRegistry
     }
 
     /// <inheritdoc />
-    public event Action<EndPointChangedEvent>? EndPointChanged;
+    public void AddNotificationHandler(INotificationHandler handler)
+    {
+        // avoid lock
+        lock (handlers)
+        {
+            handlers.Add(handler);
+            handler.ReceiveEndPointChanged += ReceiveEndPointChanged;
+            handler.ReceiveEndPointDeleted += ReceiveEndPointDeleted;
+        }
+    }
 
     /// <inheritdoc />
-    public event Action<EndPointDeletedEvent>? EndPointDeleted;
+    public bool RemoveNotificationHandler(INotificationHandler handler)
+    {
+        // avoid lock
+        lock (handlers)
+        {
+            handler.ReceiveEndPointChanged -= ReceiveEndPointChanged;
+            handler.ReceiveEndPointDeleted -= ReceiveEndPointDeleted;
+            return handlers.Remove(handler);
+        }
+    }
+
+    private void ReceiveEndPointDeleted(EndPointDeletedEvent obj)
+    {
+        
+    }
+
+    private void ReceiveEndPointChanged(EndPointChangedEvent obj)
+    {
+    }
 }
 

@@ -56,7 +56,7 @@ public sealed class EndPoints
     /// <summary>
     /// Remove the end point
     /// </summary>
-    /// <param name="endPoint"></param>
+    /// <param name="endPoint">End point to remove</param>
     /// <param name="empty">True if empty after remove, false if not</param>
     /// <returns>True if the end point was found and removed, false otherwise</returns>
     public bool Remove(EndPoint endPoint, out bool empty)

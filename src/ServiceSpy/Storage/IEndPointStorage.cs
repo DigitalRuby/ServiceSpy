@@ -16,18 +16,17 @@ public interface IEndPointStorage
     /// Upsert the specified service name and end point. If the end point already exists for the given service name, nothing happens.
     /// </summary>
     /// <param name="name">Service name</param>
-    /// <param name="endPoint">End point</param>
-    /// <param name="oldEndPoint">Old end point or null if no old end point</param>
-    /// <returns>Task of bool of whether a change was made</returns>
-    Task<bool> UpsertAsync(string name, EndPoint endPoint, out EndPoint? oldEndPoint);
+    /// <param name="endPoints">End points to upsert</param>
+    /// <returns>Task of dictionary of changes (new, old end point)</returns>
+    Task<IReadOnlyDictionary<EndPoint, EndPoint?>> UpsertAsync(string name, IReadOnlyCollection<EndPoint> endPoints);
 
     /// <summary>
     /// Delete the service end point for the specified service name
     /// </summary>
     /// <param name="name">Service name</param>
-    /// <param name="endPoint">End point</param>
-    /// <returns>Task of bool of whether the service was found and the specified end point deleted</returns>
-    Task<bool> DeleteAsync(string name, EndPoint endPoint);
+    /// <param name="endPoint">End points to delete</param>
+    /// <returns>Task of bool of whether the service was found and the specified end point deleted and another bool indicating whether all end points are deleted</returns>
+    Task<(bool, bool)> DeleteAsync(string name, IReadOnlyCollection<EndPoint> endPoints);
 
     /// <summary>
     /// Delete all end points with the specified service name

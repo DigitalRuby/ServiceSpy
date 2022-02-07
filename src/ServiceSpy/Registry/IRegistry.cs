@@ -6,7 +6,7 @@
 public interface IRegistry
 {
     /// <summary>
-    /// Register a service
+    /// Register a service end point
     /// </summary>
     /// <param name="request">Register request</param>
     /// <returns>Register response</returns>
@@ -34,12 +34,15 @@ public interface IRegistry
     Task<EndPoints?> GetEndpointsAsync(string name);
 
     /// <summary>
-    /// Event for when end point is changed
+    /// Add a notification handler
     /// </summary>
-    event Action<EndPointChangedEvent> EndPointChanged;
+    /// <param name="handler">Notification handler</param>
+    void AddNotificationHandler(INotificationHandler handler);
 
     /// <summary>
-    /// Event for when end point is deleted
+    /// Remove a notification handler
     /// </summary>
-    event Action<EndPointDeletedEvent> EndPointDeleted;
+    /// <param name="handler">Notification handler</param>
+    /// <returns>True if removed, false otherwise</returns>
+    bool RemoveNotificationHandler(INotificationHandler handler);
 }

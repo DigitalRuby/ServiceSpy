@@ -6,12 +6,12 @@
 public readonly struct UnregisterRequest
 {
     /// <summary>
-    /// Service name to unregister an end point for
+    /// Service name to unregister end points for
     /// </summary>
     public string Name { get; init; }
 
     /// <summary>
-    /// Service end point to unregister
+    /// Service end points to unregister
     /// </summary>
-    public EndPoint EndPoint { get; init; }
+    public IReadOnlyCollection<EndPoint> EndPoints { get; init; }
 }

@@ -11,7 +11,7 @@ public readonly struct RegisterRequest
     public string Name { get; init; }
 
     /// <summary>
-    /// Service end point
+    /// Service end points to register
     /// </summary>
-    public EndPoint EndPoint { get; init; }
+    public IReadOnlyCollection<EndPoint> EndPoints { get; init; }
 }
