@@ -121,7 +121,6 @@ internal sealed class Registry : IRegistry
     /// <inheritdoc />
     public void AddNotificationHandler(INotificationHandler handler)
     {
-        // avoid lock
         lock (handlers)
         {
             handlers.Add(handler);
@@ -133,7 +132,6 @@ internal sealed class Registry : IRegistry
     /// <inheritdoc />
     public bool RemoveNotificationHandler(INotificationHandler handler)
     {
-        // avoid lock
         lock (handlers)
         {
             handler.ReceiveEndPointChanged -= ReceiveEndPointChanged;
