@@ -18,7 +18,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<(bool, bool)> DeleteAsync(string name, IReadOnlyCollection<EndPoint> endPoints)
+    public Task<(bool, bool)> DeleteAsync(string name, IEnumerable<EndPoint> endPoints)
     {
         lock (allEndPoints)
         {
@@ -54,7 +54,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyDictionary<EndPoint, EndPoint?>> UpsertAsync(string name, IReadOnlyCollection<EndPoint> endPoints)
+    public Task<IReadOnlyDictionary<EndPoint, EndPoint?>?> UpsertAsync(string name, IEnumerable<EndPoint> endPoints)
     {
         lock (allEndPoints)
         {
@@ -65,7 +65,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
             }
 
             // results
-            var results = new Dictionary<EndPoint, EndPoint?>();
+            Dictionary<EndPoint, EndPoint?>? results = null;
 
             // upsert each end point
             foreach (var endPoint in endPoints)
@@ -73,12 +73,13 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
                 bool change = currentEndPoints.Upsert(endPoint, out EndPoint? oldEndPoint);
                 if (change)
                 {
+                    results ??= new Dictionary<EndPoint, EndPoint?>();
                     results[endPoint] = oldEndPoint;
                 }
             }
 
             // return back the changes
-            return Task.FromResult<IReadOnlyDictionary<EndPoint, EndPoint?>>(results);
+            return Task.FromResult<IReadOnlyDictionary<EndPoint, EndPoint?>?>(results);
         }
     }
 }

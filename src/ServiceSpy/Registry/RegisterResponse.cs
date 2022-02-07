@@ -6,7 +6,7 @@
 public struct RegisterResponse
 {
     /// <summary>
-    /// Changes
+    /// Changes or null if none
     /// </summary>
-    public IReadOnlyDictionary<EndPoint, EndPoint?> Changes { get; init; }
+    public IReadOnlyDictionary<EndPoint, EndPoint?>? Changes { get; init; }
 }

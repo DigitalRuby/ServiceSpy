@@ -32,17 +32,4 @@ public interface IRegistry
     /// <param name="name">Service name</param>
     /// <returns>Service end points or null if no service found with the name</returns>
     Task<EndPoints?> GetEndpointsAsync(string name);
-
-    /// <summary>
-    /// Add a notification handler
-    /// </summary>
-    /// <param name="handler">Notification handler</param>
-    void AddNotificationHandler(INotificationHandler handler);
-
-    /// <summary>
-    /// Remove a notification handler
-    /// </summary>
-    /// <param name="handler">Notification handler</param>
-    /// <returns>True if removed, false otherwise</returns>
-    bool RemoveNotificationHandler(INotificationHandler handler);
 }
