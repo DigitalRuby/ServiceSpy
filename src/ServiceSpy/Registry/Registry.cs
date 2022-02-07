@@ -43,7 +43,7 @@ internal sealed class Registry : IRegistry, IDisposable
     /// <inheritdoc />
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
-        var results = await storage.UpsertAsync(request.Name, request.EndPoints);
+        var results = await storage.UpsertAsync(request.Id, request.EndPoints);
         return new RegisterResponse
         {
             Changes = results
@@ -53,7 +53,7 @@ internal sealed class Registry : IRegistry, IDisposable
     /// <inheritdoc />
     public async Task<UnregisterResponse> UnregisterAsync(UnregisterRequest request)
     {
-        (bool deleted, bool all) = await storage.DeleteAsync(request.Name, request.EndPoints);
+        (bool deleted, bool all) = await storage.DeleteAsync(request.Id, request.EndPoints);
         return new UnregisterResponse
         {
             All = all,
@@ -64,7 +64,7 @@ internal sealed class Registry : IRegistry, IDisposable
     /// <inheritdoc />
     public async Task<UnregisterAllResponse> UnregisterAllAsync(UnregisterAllRequest request)
     {
-        var endPointsDeleted = await storage.DeleteAllAsync(request.Name);
+        var endPointsDeleted = await storage.DeleteAllAsync(request.Id);
         return new UnregisterAllResponse
         {
             EndPoints = endPointsDeleted
@@ -72,20 +72,20 @@ internal sealed class Registry : IRegistry, IDisposable
     }
 
     /// <inheritdoc />
-    public Task<EndPoints?> GetEndpointsAsync(string name)
+    public Task<EndPoints?> GetEndpointsAsync(Guid id)
     {
-        return storage.GetAsync(name);
+        return storage.GetAsync(id);
     }
 
 
     private Task ReceiveEndPointChangedAsync(EndPointChangedEvent obj)
     {
-        return storage.UpsertAsync(obj.Name, obj.Changes.Keys);
+        return storage.UpsertAsync(obj.Id, obj.Changes.Keys);
     }
 
     private Task ReceiveEndPointDeletedAsync(EndPointDeletedEvent obj)
     {
-        return storage.DeleteAsync(obj.Name, obj.EndPoints);
+        return storage.DeleteAsync(obj.Id, obj.EndPoints);
     }
 }
 

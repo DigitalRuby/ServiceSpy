@@ -8,9 +8,9 @@ public sealed class EndPoints
     private readonly Dictionary<System.Net.IPAddress, EndPoint> endPoints = new();
 
     /// <summary>
-    /// Service name
+    /// Service id
     /// </summary>
-    public string Name { get; }
+    public Guid Id { get; }
 
     /// <summary>
     /// Get all the end points available for the service
@@ -26,10 +26,10 @@ public sealed class EndPoints
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="name">Service name</param>
-    public EndPoints(string name)
+    /// <param name="id">Service id</param>
+    public EndPoints(Guid id)
     {
-        Name = name;
+        Id = id;
     }
 
     /// <summary>

@@ -6,9 +6,9 @@
 public readonly struct EndPointDeletedEvent
 {
     /// <summary>
-    /// Service name
+    /// Service id
     /// </summary>
-    public string Name { get; init; }
+    public Guid Id { get; init; }
 
     /// <summary>
     /// The end point(s) that were deleted

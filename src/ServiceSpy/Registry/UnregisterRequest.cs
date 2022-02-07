@@ -6,9 +6,9 @@
 public readonly struct UnregisterRequest
 {
     /// <summary>
-    /// Service name to unregister end points for
+    /// Service id to unregister end points for
     /// </summary>
-    public string Name { get; init; }
+    public Guid Id { get; init; }
 
     /// <summary>
     /// Service end points to unregister

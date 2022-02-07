@@ -29,7 +29,7 @@ public interface IRegistry
     /// <summary>
     /// Find endpoints for a service
     /// </summary>
-    /// <param name="name">Service name</param>
+    /// <param name="id">Service id</param>
     /// <returns>Service end points or null if no service found with the name</returns>
-    Task<EndPoints?> GetEndpointsAsync(string name);
+    Task<EndPoints?> GetEndpointsAsync(Guid id);
 }

@@ -5,26 +5,26 @@
 /// </summary>
 public sealed class InMemoryEndPointStorage : IEndPointStorage
 {
-    private readonly Dictionary<string, EndPoints> allEndPoints = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<Guid, EndPoints> allEndPoints = new();
 
     /// <inheritdoc />
-    public Task<IReadOnlyCollection<EndPoint>?> DeleteAllAsync(string name)
+    public Task<IReadOnlyCollection<EndPoint>?> DeleteAllAsync(Guid id)
     {
         lock (allEndPoints)
         {
-            allEndPoints.Remove(name, out EndPoints? endPoints);
+            allEndPoints.Remove(id, out EndPoints? endPoints);
             return Task.FromResult<IReadOnlyCollection<EndPoint>?>(endPoints?.GetAllEndPoints());
         }
     }
 
     /// <inheritdoc />
-    public Task<(bool, bool)> DeleteAsync(string name, IEnumerable<EndPoint> endPoints)
+    public Task<(bool, bool)> DeleteAsync(Guid id, IEnumerable<EndPoint> endPoints)
     {
         lock (allEndPoints)
         {
             bool removed = false;
             bool empty = false;
-            if (this.allEndPoints.TryGetValue(name, out EndPoints? allEndPoints))
+            if (this.allEndPoints.TryGetValue(id, out EndPoints? allEndPoints))
             {
                 foreach (var endPoint in endPoints)
                 {
@@ -33,7 +33,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
                 }
                 if (empty)
                 {
-                    this.allEndPoints.Remove(name);
+                    this.allEndPoints.Remove(id);
                 }
             }
             return Task.FromResult<(bool, bool)>((removed, empty));
@@ -41,11 +41,11 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<EndPoints?> GetAsync(string name)
+    public Task<EndPoints?> GetAsync(Guid id)
     {
         lock (allEndPoints)
         {
-            if (allEndPoints.TryGetValue(name, out EndPoints? endPoints))
+            if (allEndPoints.TryGetValue(id, out EndPoints? endPoints))
             {
                 return Task.FromResult<EndPoints?>(endPoints);
             }
@@ -54,14 +54,14 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyDictionary<EndPoint, EndPoint?>?> UpsertAsync(string name, IEnumerable<EndPoint> endPoints)
+    public Task<IReadOnlyDictionary<EndPoint, EndPoint?>?> UpsertAsync(Guid id, IEnumerable<EndPoint> endPoints)
     {
         lock (allEndPoints)
         {
             // make end points if we need to
-            if (!allEndPoints.TryGetValue(name, out EndPoints? currentEndPoints))
+            if (!allEndPoints.TryGetValue(id, out EndPoints? currentEndPoints))
             {
-                allEndPoints[name] = currentEndPoints = new(name);
+                allEndPoints[id] = currentEndPoints = new(id);
             }
 
             // results

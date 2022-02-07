@@ -6,7 +6,7 @@
 public readonly struct UnregisterAllRequest
 {
     /// <summary>
-    /// Service name
+    /// Service id
     /// </summary>
-    public string Name { get; init; }
+    public Guid Id { get; init; }
 }

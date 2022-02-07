@@ -6,9 +6,9 @@
 public readonly struct EndPointChangedEvent
 {
     /// <summary>
-    /// Service name
+    /// Service id
     /// </summary>
-    public string Name { get; init; }
+    public Guid Id { get; init; }
 
     /// <summary>
     /// Contains the new end point, and previous end point (if any)

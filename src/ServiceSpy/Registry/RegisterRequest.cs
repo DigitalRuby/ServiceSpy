@@ -6,6 +6,11 @@
 public readonly struct RegisterRequest
 {
     /// <summary>
+    /// Service id
+    /// </summary>
+    public Guid Id { get; init; }
+
+    /// <summary>
     /// Service name
     /// </summary>
     public string Name { get; init; }

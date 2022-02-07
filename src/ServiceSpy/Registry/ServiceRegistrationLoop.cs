@@ -48,7 +48,7 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
             // send out our service config and end point to the universe
             await handler.SendEndPointChangedAsync(new EndPointChangedEvent
             {
-                Name = config.Name,
+                Id = config.Id,
                 Changes = changes
             });
         }
@@ -92,6 +92,11 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
 public class ServiceRegistrationHandlerConfig
 {
     private static readonly TimeSpan defaultInterval = TimeSpan.FromSeconds(10.0);
+
+    /// <summary>
+    /// Service id
+    /// </summary>
+    public Guid Id { get; set; }
 
     /// <summary>
     /// Service name
