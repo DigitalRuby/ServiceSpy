@@ -13,6 +13,7 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
 {
     private readonly ServiceRegistrationHandlerConfig config;
     private readonly INotificationSender handler;
+    private readonly ILogger logger;
     private readonly Dictionary<EndPoint, EndPoint?> changes;
     private readonly EndPoint endPoint;
 
@@ -21,10 +22,11 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
     /// </summary>
     /// <param name="config">Config</param>
     /// <param name="handler">Sends change notifications</param>
-    public ServiceRegistrationLoop(ServiceRegistrationHandlerConfig config, INotificationSender handler)
+    public ServiceRegistrationLoop(ServiceRegistrationHandlerConfig config, INotificationSender handler, ILogger<ServiceRegistrationLoop> logger)
     {
         this.config = config;
         this.handler = handler;
+        this.logger = logger;
         string ipAddress = (string.IsNullOrWhiteSpace(config.IPAddress) ? GetLocalIPAddress() : config.IPAddress);
         endPoint = new()
         {
@@ -43,14 +45,21 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
         changes[endPoint] = null;
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(config.Interval, stoppingToken);
-
-            // send out our service config and end point to the universe
-            await handler.SendEndPointChangedAsync(new EndPointChangedEvent
+            try
             {
-                Id = config.Id,
-                Changes = changes
-            });
+                // send out our service config and end point to the universe
+                await handler.SendEndPointChangedAsync(new EndPointChangedEvent
+                {
+                    Id = config.Id,
+                    Changes = changes
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error sending end point changed event");
+            }
+
+            await Task.Delay(config.Interval, stoppingToken);
         }
     }
 
