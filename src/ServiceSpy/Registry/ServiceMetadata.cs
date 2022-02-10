@@ -90,12 +90,14 @@ public sealed class ServiceMetadata
     /// </summary>
     /// <param name="s">Binary stream</param>
     /// <param name="deletion">Whether the metadata has a deletion flag</param>
+    /// <param name="healthCheck">Health check</param>
     /// <returns>Service metadata or null if invalid binary data</returns>
-    public static ServiceMetadata? FromBinary(Stream s, out bool deletion)
+    public static ServiceMetadata? FromBinary(Stream s, out bool deletion, out string? healthCheck)
     {
         BinaryReader reader = new(s, Encoding.UTF8);
         var serviceSpyGuidLength = reader.Read7BitEncodedInt();
         deletion = false;
+        healthCheck = null;
 
         if (serviceSpyGuidLength == 16)
         {
@@ -120,6 +122,9 @@ public sealed class ServiceMetadata
                         var name = reader.ReadString(); // name
                         var serviceVersion = reader.ReadString(); // service version
                         deletion = reader.ReadBoolean(); // is this a deletion?
+                        healthCheck = reader.ReadString(); // health check
+                        healthCheck = (healthCheck == "!" ? null : healthCheck);
+
                         var ipBytesLength = reader.Read7BitEncodedInt(); // ip address byte length
 
                         // valid ip address byte length
@@ -184,7 +189,8 @@ public sealed class ServiceMetadata
     /// </summary>
     /// <param name="s">Stream</param>
     /// <param name="deletion">Whether to write deletion flag</param>
-    public void ToBinary(Stream s, bool deletion)
+    /// <param name="healthCheck">Health check</param>
+    public void ToBinary(Stream s, bool deletion, string? healthCheck = null)
     {
         BinaryWriter writer = new(s, Encoding.UTF8);
         writer.Write7BitEncodedInt(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid.Length);
@@ -196,6 +202,7 @@ public sealed class ServiceMetadata
         writer.Write(Name); // name
         writer.Write(Version); // service version
         writer.Write(deletion); // is this a deletion?
+        writer.Write(healthCheck is null ? "!" : healthCheck);
         var ipBytes = IPAddress.GetAddressBytes();
         writer.Write7BitEncodedInt(ipBytes.Length); // ip address byte length
         writer.Write(ipBytes); // ip address bytes

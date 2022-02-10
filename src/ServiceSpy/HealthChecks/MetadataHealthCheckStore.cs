@@ -1,4 +1,4 @@
-﻿namespace ServiceSpy.Registry;
+﻿namespace ServiceSpy.HealthChecks;
 
 // TODO: The health check store is hard-coded to be in memory
 // We will want an abstraction layer to be able to store health check results in different types of storage (redis, sql, etc.)
@@ -22,7 +22,7 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
 {
     private const int maxFailuresBeforeUnhealthy = 3;
     private static readonly TimeSpan healthCheckInterval = TimeSpan.FromSeconds(10.0);
-    private static readonly TimeSpan healthCheckDeadTimeSpan = TimeSpan.FromMinutes(1.0);
+    private static readonly TimeSpan healthCheckDeadTimeSpan = TimeSpan.FromMinutes(5.0);
 
     private readonly object syncRoot = new();
     private readonly ILogger logger;
@@ -69,12 +69,25 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
                     healthyMetadatas[metadata] = new();
                 }
             }
+            else if (error == "X")
+            {
+                // nuke
+                if (healthyMetadatas.Remove(metadata))
+                {
+                    // TODO: Notify of status change
+                }
+
+                if (unhealthyMetadatas.Remove(metadata))
+                {
+                    // TODO: Notify of status change
+                }
+            }
             else
             {
                 // move to unhealthy pool if needed
                 if (!healthyMetadatas.TryGetValue(metadata, out HealthCheckStatus? status))
                 {
-                    // if already in unhealthy pool, see if we need to kick it out entirely
+                    // already in unhealthy pool
                     if (unhealthyMetadatas.TryGetValue(metadata, out status))
                     {
                         status.Failures++;
@@ -84,6 +97,8 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
                     {
                         // new failed health check entry, still healthy until more failures
                         healthyMetadatas[metadata] = new() { Failures = 1, LastError = error };
+
+                        // TODO: Notify of status change
                     }
                 }
                 else if (++status.Failures > maxFailuresBeforeUnhealthy)

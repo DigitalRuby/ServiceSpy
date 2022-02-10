@@ -12,7 +12,6 @@ public sealed class UdpNotificationReceiver : BackgroundService, INotificationRe
     private readonly ILogger logger;
 
     private UdpClient? client;
-    private ServiceMetadata? lastMetadata;
 
     /// <summary>
     /// Constructor
@@ -53,17 +52,14 @@ public sealed class UdpNotificationReceiver : BackgroundService, INotificationRe
                     if (bytes.Length < 1024)
                     {
                         MemoryStream ms = new(bytes);
-                        var newMetadata = ServiceMetadata.FromBinary(ms, out bool deletion);
-
-                        // if we changed end points, broadcast the change
-                        if (newMetadata is not null &&
-                            (lastMetadata is null || !lastMetadata.Equals(newMetadata)))
+                        var newMetadata = ServiceMetadata.FromBinary(ms, out bool deletion, out string? healthCheck);
+                        if (newMetadata is not null)
                         {
-                            lastMetadata = newMetadata;
                             ReceiveMetadataAsync?.Invoke(new MetadataNotification
                             {
                                 Metadata = newMetadata,
-                                Deleted = deletion
+                                Deleted = deletion,
+                                HealthCheck = healthCheck
                             }, stoppingToken);
                         }
                     }

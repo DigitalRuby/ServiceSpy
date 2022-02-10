@@ -14,6 +14,7 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
     private readonly ILogger logger;
 
     private ServiceMetadata? lastMetadata;
+    private string? lastHealthCheck;
     private Memory<byte> message;
     private UdpClient? server;
 
@@ -40,15 +41,19 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
     /// <inheritdoc />
     public Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken)
     {
-        if (lastMetadata is null || !lastMetadata.Equals(evt.Metadata))
+        if (lastMetadata is null ||
+            evt.Deleted ||
+            evt.HealthCheck != lastHealthCheck ||
+            !lastMetadata.Equals(evt.Metadata))
         {
             lastMetadata = evt.Metadata;
-            message = CreateMessage(evt.Deleted);
+            lastHealthCheck = evt.HealthCheck;
+            message = CreateMessage(evt.Deleted, evt.HealthCheck);
         }
         return SendMessage(message, cancelToken);
     }
 
-    private Memory<byte> CreateMessage(bool deletion)
+    private Memory<byte> CreateMessage(bool deletion, string? healthCheck)
     {
         if (lastMetadata is null)
         {
@@ -56,7 +61,7 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
         }
 
         MemoryStream ms = new();
-        lastMetadata.ToBinary(ms, deletion);
+        lastMetadata.ToBinary(ms, deletion, healthCheck);
         return ms.ToArray();
     }
 

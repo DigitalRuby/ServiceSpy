@@ -1,4 +1,4 @@
-﻿namespace ServiceSpy.Registry;
+﻿namespace ServiceSpy.HealthChecks;
 
 /// <summary>
 /// Health check status

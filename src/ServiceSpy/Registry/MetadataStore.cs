@@ -38,15 +38,19 @@ public sealed class MetadataStore : IDisposable
     private readonly object syncRoot = new();
 
     private readonly INotificationReceiver notificationReceiver;
+    private readonly HealthChecks.IMetadataHealthCheckStore healthCheckStore;
+
     private readonly Dictionary<ServiceMetadata, ServiceMetadata> metadatas = new();
 
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="notificationReceiver">Notification receiver</param>
-    public MetadataStore(INotificationReceiver notificationReceiver)
+    /// <param name="healthCheckStore">Health check store</param>
+    public MetadataStore(INotificationReceiver notificationReceiver, HealthChecks.IMetadataHealthCheckStore healthCheckStore)
     {
         this.notificationReceiver = notificationReceiver;
+        this.healthCheckStore = healthCheckStore;
         notificationReceiver.ReceiveMetadataAsync += ReceiveMetadataAsync;
     }
 
@@ -86,15 +90,21 @@ public sealed class MetadataStore : IDisposable
         }
     }
 
-    private Task ReceiveMetadataAsync(MetadataNotification evt, CancellationToken cancelToken)
+    private async Task ReceiveMetadataAsync(MetadataNotification evt, CancellationToken cancelToken)
     {
+        // if we have health check info, pass it on
+        if (evt.HealthCheck is not null)
+        {
+            await healthCheckStore.SetHealthAsync(evt.Metadata, evt.HealthCheck);
+        }
+
         if (evt.Deleted)
         {
-            return RemoveAsync(evt.Metadata);
+            await RemoveAsync(evt.Metadata);
         }
         else
         {
-            return UpsertAsync(evt.Metadata);
+            await UpsertAsync(evt.Metadata);
         }
     }
 }

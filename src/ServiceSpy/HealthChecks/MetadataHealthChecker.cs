@@ -1,4 +1,4 @@
-﻿namespace ServiceSpy.Registry;
+﻿namespace ServiceSpy.HealthChecks;
 
 /// <summary>
 /// Performs health checks and stores status for metadata

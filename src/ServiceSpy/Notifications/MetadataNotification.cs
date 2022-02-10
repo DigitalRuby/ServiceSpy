@@ -14,4 +14,9 @@ public readonly struct MetadataNotification
     /// Whether the metadata was deleted
     /// </summary>
     public bool Deleted { get; init; }
+
+    /// <summary>
+    /// Health check error, if any. Null for not specified, empty string for health otherwise an error string.
+    /// </summary>
+    public string? HealthCheck { get; init; }
 }
