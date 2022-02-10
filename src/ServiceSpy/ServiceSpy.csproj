@@ -8,8 +8,4 @@
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 
-	<ItemGroup>
-	  <Folder Include="HealthChecks\" />
-	</ItemGroup>
-
 </Project>

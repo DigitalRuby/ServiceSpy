@@ -1,4 +1,6 @@
-﻿namespace ServiceSpy.Storage;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace ServiceSpy.Storage;
 
 /// <summary>
 /// An end point for a service - this contains the ip address, port and path for base service calls
@@ -24,4 +26,24 @@ public readonly struct EndPoint
     /// Path
     /// </summary>
     public string Path { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public override bool Equals([NotNullWhen(true)] object? obj)
+    {
+        if (obj is not EndPoint ep)
+        {
+            return false;
+        }
+
+        return IPAddress.Equals(ep.IPAddress) &&
+            Port == ep.Port &&
+            Host.Equals(ep.Host, StringComparison.OrdinalIgnoreCase) &&
+            Path.Equals(ep.Path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return IPAddress.GetHashCode() ^ Port ^ Host.GetHashCode() ^ Path.GetHashCode();
+    }
 }

@@ -9,13 +9,15 @@ public interface INotificationSender
     /// Notify of an end point change event
     /// </summary>
     /// <param name="evt">End point changed event</param>
+    /// <param name="cancelToken">Cancel token</param>
     /// <returns>Task</returns>
-    Task SendEndPointChangedAsync(EndPointChangedEvent evt);
+    Task SendEndPointChangedAsync(EndPointChangedEvent evt, CancellationToken cancelToken = default);
 
     /// <summary>
     /// Notify of an end point deletion event
     /// </summary>
     /// <param name="evt">End point deleted event</param>
+    /// <param name="cancelToken">Cancel token</param>
     /// <returns>Task</returns>
-    Task SendEndPointDeletedAsync(EndPointDeletedEvent evt);
+    Task SendEndPointDeletedAsync(EndPointDeletedEvent evt, CancellationToken cancelToken = default);
 }

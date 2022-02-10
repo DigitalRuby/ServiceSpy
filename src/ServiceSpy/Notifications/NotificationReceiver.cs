@@ -8,10 +8,10 @@ public interface INotificationReceiver
     /// <summary>
     /// Receive end point changed event
     /// </summary>
-    event Func<EndPointChangedEvent, Task> ReceiveEndPointChangedAsync;
+    event Func<EndPointChangedEvent, CancellationToken, Task> ReceiveEndPointChangedAsync;
 
     /// <summary>
     /// Receive end point deleted event
     /// </summary>
-    event Func<EndPointDeletedEvent, Task> ReceiveEndPointDeletedAsync;
+    event Func<EndPointDeletedEvent, CancellationToken, Task> ReceiveEndPointDeletedAsync;
 }

@@ -8,7 +8,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     private readonly Dictionary<Guid, EndPoints> allEndPoints = new();
 
     /// <inheritdoc />
-    public Task<IReadOnlyCollection<EndPoint>?> DeleteAllAsync(Guid id)
+    public Task<IReadOnlyCollection<EndPoint>?> DeleteAllAsync(Guid id, CancellationToken cancelToken)
     {
         lock (allEndPoints)
         {
@@ -18,7 +18,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<(bool, bool)> DeleteAsync(Guid id, IEnumerable<EndPoint> endPoints)
+    public Task<(bool, bool)> DeleteAsync(Guid id, IEnumerable<EndPoint> endPoints, CancellationToken cancelToken)
     {
         lock (allEndPoints)
         {
@@ -41,7 +41,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<EndPoints?> GetAsync(Guid id)
+    public Task<EndPoints?> GetAsync(Guid id, CancellationToken cancelToken)
     {
         lock (allEndPoints)
         {
@@ -54,7 +54,7 @@ public sealed class InMemoryEndPointStorage : IEndPointStorage
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyDictionary<EndPoint, EndPoint?>?> UpsertAsync(Guid id, IEnumerable<EndPoint> endPoints)
+    public Task<IReadOnlyDictionary<EndPoint, EndPoint?>?> UpsertAsync(Guid id, IEnumerable<EndPoint> endPoints, CancellationToken cancelToken)
     {
         lock (allEndPoints)
         {

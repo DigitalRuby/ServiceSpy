@@ -40,6 +40,18 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
     }
 
     /// <inheritdoc />
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        // send shutdown/deletion event
+        await handler.SendEndPointDeletedAsync(new EndPointDeletedEvent
+        {
+            Id = config.Id,
+            EndPoints = new EndPoint[] { changes.First().Key }
+        }, cancellationToken);
+        await base.StopAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         changes[endPoint] = null;
@@ -52,7 +64,7 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
                 {
                     Id = config.Id,
                     Changes = changes
-                });
+                }, stoppingToken);
             }
             catch (Exception ex)
             {

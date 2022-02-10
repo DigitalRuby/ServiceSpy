@@ -78,14 +78,14 @@ internal sealed class Registry : IRegistry, IDisposable
     }
 
 
-    private Task ReceiveEndPointChangedAsync(EndPointChangedEvent obj)
+    private Task ReceiveEndPointChangedAsync(EndPointChangedEvent obj, CancellationToken cancelToken)
     {
-        return storage.UpsertAsync(obj.Id, obj.Changes.Keys);
+        return storage.UpsertAsync(obj.Id, obj.Changes.Keys, cancelToken);
     }
 
-    private Task ReceiveEndPointDeletedAsync(EndPointDeletedEvent obj)
+    private Task ReceiveEndPointDeletedAsync(EndPointDeletedEvent obj, CancellationToken cancelToken)
     {
-        return storage.DeleteAsync(obj.Id, obj.EndPoints);
+        return storage.DeleteAsync(obj.Id, obj.EndPoints, cancelToken);
     }
 }
 
