@@ -50,24 +50,13 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
 
     private Memory<byte> CreateMessage(bool deletion)
     {
-        var guidBytes = lastMetadata!.Id.ToByteArray();
+        if (lastMetadata is null)
+        {
+            return Memory<byte>.Empty;
+        }
+
         MemoryStream ms = new();
-        BinaryWriter writer = new(ms, Encoding.UTF8);
-        writer.Write7BitEncodedInt(serviceSpyGuid.Length);
-        writer.Write(serviceSpyGuid);
-        writer.Write7BitEncodedInt(1); // version
-        writer.Write7BitEncodedInt(guidBytes.Length); // id length
-        writer.Write(guidBytes); // id
-        writer.Write(lastMetadata.Name); // name
-        writer.Write(lastMetadata.Version); // service version
-        writer.Write(deletion); // is this a deletion?
-        var ipBytes = lastMetadata.IPAddress.GetAddressBytes();
-        writer.Write7BitEncodedInt(ipBytes.Length); // ip address byte length
-        writer.Write(ipBytes); // ip address bytes
-        writer.Write(port); // port
-        writer.Write(lastMetadata.Host); // host length + host bytes
-        writer.Write(lastMetadata.Path); // path length + path bytes
-        writer.Write(lastMetadata.HealthCheckPath); // health check path length + health check path bytes
+        lastMetadata.ToBinary(ms, deletion);
         return ms.ToArray();
     }
 

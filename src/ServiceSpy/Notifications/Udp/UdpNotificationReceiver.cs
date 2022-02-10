@@ -53,94 +53,18 @@ public sealed class UdpNotificationReceiver : BackgroundService, INotificationRe
                     if (bytes.Length < 1024)
                     {
                         MemoryStream ms = new(bytes);
-                        BinaryReader reader = new(ms, Encoding.UTF8);
-                        var serviceSpyGuidLength = reader.Read7BitEncodedInt();
-                        if (serviceSpyGuidLength == 16)
+                        var newMetadata = ServiceMetadata.FromBinary(ms, out bool deletion);
+
+                        // if we changed end points, broadcast the change
+                        if (newMetadata is not null &&
+                            (lastMetadata is null || !lastMetadata.Equals(newMetadata)))
                         {
-                            var serviceSpyGuidBytes = reader.ReadBytes(serviceSpyGuidLength);
-                            if (serviceSpyGuidBytes.SequenceEqual(UdpNotificationSender.serviceSpyGuid))
+                            lastMetadata = newMetadata;
+                            ReceiveMetadataAsync?.Invoke(new MetadataNotification
                             {
-                                var version = reader.Read7BitEncodedInt();
-
-                                // validate version
-                                if (version == 1)
-                                {
-                                    // service id length
-                                    var idBytesLength = reader.Read7BitEncodedInt();
-
-                                    // validate id byte length
-                                    if (idBytesLength == 16)
-                                    {
-                                        // service id
-                                        var idBytes = reader.ReadBytes(idBytesLength);
-                                        Guid id = new(idBytes);
-
-                                        var name = reader.ReadString(); // name
-                                        var serviceVersion = reader.ReadString(); // service version
-                                        var deletion = reader.ReadBoolean(); // is this a deletion?
-                                        var ipBytesLength = reader.Read7BitEncodedInt(); // ip address byte length
-
-                                        // valid ip address byte length
-                                        if (ipBytesLength == 4 || ipBytesLength == 16)
-                                        {
-                                            // ip bytes
-                                            var ipBytes = reader.ReadBytes(ipBytesLength);
-                                            IPAddress ip = new(ipBytes);
-
-                                            // port
-                                            var port = reader.ReadInt32();
-
-                                            // validate port
-                                            if (port > 0 && port <= ushort.MaxValue)
-                                            {
-                                                // host
-                                                var host = reader.ReadString();
-
-                                                // validate host
-                                                if (host.Length < 128)
-                                                {
-                                                    // root path
-                                                    var path = reader.ReadString();
-
-                                                    /// validate path
-                                                    if (path.Length < 128)
-                                                    {
-                                                        // root health check path
-                                                        var healthCheckPath = reader.ReadString();
-
-                                                        // validate health check path
-                                                        if (healthCheckPath.Length < 128)
-                                                        {
-                                                            ServiceMetadata newMetadata = new()
-                                                            {
-                                                                Id = id,
-                                                                Name = name,
-                                                                Version = serviceVersion,
-                                                                IPAddress = ip,
-                                                                Port = port,
-                                                                Host = host,
-                                                                Path = path,
-                                                                HealthCheckPath = healthCheckPath
-                                                            };
-
-                                                            // if we changed end points, broadcast the change
-                                                            if (lastMetadata is null || !lastMetadata.Equals(newMetadata))
-                                                            {
-                                                                lastMetadata = newMetadata;
-                                                                ReceiveMetadataAsync?.Invoke(new MetadataNotification
-                                                                {
-                                                                    Metadata = newMetadata,
-                                                                    Deleted = deletion
-                                                                }, stoppingToken);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                                Metadata = newMetadata,
+                                Deleted = deletion
+                            }, stoppingToken);
                         }
                     }
                 }
