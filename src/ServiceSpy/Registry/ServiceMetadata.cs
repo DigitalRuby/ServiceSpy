@@ -45,6 +45,23 @@ public sealed class ServiceMetadata
     /// </summary>
     public string HealthCheckPath { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Check if this service metadata fully equals another service metadata
+    /// </summary>
+    /// <param name="m">Other service metadata</param>
+    /// <returns>True if fully equal, false otherwise</returns>
+    public bool EqualsExactly(ServiceMetadata m)
+    {
+        return this.Id == m.Id &&
+            this.Name == m.Name &&
+            this.Version == m.Version &&
+            this.IPAddress.Equals(m.IPAddress) &&
+            this.Port == m.Port &&
+            this.Host == m.Host &&
+            this.Path == m.Path &&
+            this.HealthCheckPath == m.HealthCheckPath;
+    }
+
     /// <inheritdoc />
     public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj)
     {
@@ -190,7 +207,7 @@ public sealed class ServiceMetadata
     /// <param name="s">Stream</param>
     /// <param name="deletion">Whether to write deletion flag</param>
     /// <param name="healthCheck">Health check</param>
-    public void ToBinary(Stream s, bool deletion, string? healthCheck = null)
+    public void ToBinary(Stream s, bool deletion = false, string? healthCheck = null)
     {
         BinaryWriter writer = new(s, Encoding.UTF8);
         writer.Write7BitEncodedInt(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid.Length);
