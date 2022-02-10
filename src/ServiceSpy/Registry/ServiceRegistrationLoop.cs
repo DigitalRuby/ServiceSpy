@@ -11,42 +11,37 @@ public interface IServiceRegistrationLoop : IDisposable
 /// <inheritdoc />
 public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLoop
 {
-    private readonly ServiceRegistrationHandlerConfig config;
+    private readonly ServiceMetadata metadata;
     private readonly INotificationSender handler;
+    private readonly TimeSpan interval;
     private readonly ILogger logger;
-    private readonly Dictionary<EndPoint, EndPoint?> changes;
-    private readonly EndPoint endPoint;
 
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="config">Config</param>
+    /// <param name="metadata">Service metadata</param>
     /// <param name="handler">Sends change notifications</param>
-    public ServiceRegistrationLoop(ServiceRegistrationHandlerConfig config, INotificationSender handler, ILogger<ServiceRegistrationLoop> logger)
+    /// <param name="interval">Send interval</param>
+    /// <param name="logger">Logger</param>
+    public ServiceRegistrationLoop(ServiceMetadata metadata,
+        INotificationSender handler,
+        TimeSpan interval,
+        ILogger<ServiceRegistrationLoop> logger)
     {
-        this.config = config;
+        this.metadata = metadata;
         this.handler = handler;
+        this.interval = interval;
         this.logger = logger;
-        string ipAddress = (string.IsNullOrWhiteSpace(config.IPAddress) ? GetLocalIPAddress() : config.IPAddress);
-        endPoint = new()
-        {
-            Host = config.Host,
-            IPAddress = System.Net.IPAddress.Parse(ipAddress),
-            Path = config.Path,
-            Port = config.Port
-        };
-        changes = new();
-        changes[endPoint] = null;
     }
 
     /// <inheritdoc />
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         // send shutdown/deletion event
-        await handler.SendEndPointDeletedAsync(new EndPointDeletedEvent
+        await handler.SendMetadataAsync(new MetadataNotification
         {
-            Id = config.Id,
-            EndPoints = new EndPoint[] { changes.First().Key }
+            Deleted = true,
+            Metadata = metadata
         }, cancellationToken);
         await base.StopAsync(cancellationToken);
     }
@@ -54,24 +49,22 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        changes[endPoint] = null;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                // send out our service config and end point to the universe
-                await handler.SendEndPointChangedAsync(new EndPointChangedEvent
+                // send out our service metadata to the universe
+                await handler.SendMetadataAsync(new MetadataNotification
                 {
-                    Id = config.Id,
-                    Changes = changes
+                    Metadata = metadata
                 }, stoppingToken);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error sending end point changed event");
+                logger.LogError(ex, "Error sending metadata event");
             }
 
-            await Task.Delay(config.Interval, stoppingToken);
+            await Task.Delay(interval, stoppingToken);
         }
     }
 
@@ -107,45 +100,4 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
         // ruh roh
         throw new ApplicationException("No network adapters with an IPv4 or IPv6 address on the system");
     }
-}
-
-/// <inheritdoc />
-public class ServiceRegistrationHandlerConfig
-{
-    private static readonly TimeSpan defaultInterval = TimeSpan.FromSeconds(10.0);
-
-    /// <summary>
-    /// Service id
-    /// </summary>
-    public Guid Id { get; set; }
-
-    /// <summary>
-    /// Service name
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Host name (for http host header)
-    /// </summary>
-    public string Host { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Base path for http calls
-    /// </summary>
-    public string Path { get; set; } = string.Empty;
-
-    /// <summary>
-    /// IP address or empty to pick one
-    /// </summary>
-    public string IPAddress { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Port (default is 443 https)
-    /// </summary>
-    public int Port { get; set; } = 443;
-
-    /// <summary>
-    /// Interval to send registration notification. Default is 10 seconds.
-    /// </summary>
-    public TimeSpan Interval { get; set; } = defaultInterval;
 }

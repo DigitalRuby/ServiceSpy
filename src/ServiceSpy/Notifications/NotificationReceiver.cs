@@ -1,17 +1,12 @@
 ﻿namespace ServiceSpy.Notifications;
 
 /// <summary>
-/// Interface to handle receiving notifications about service end point changes
+/// Interface to handle receiving notifications about metadata
 /// </summary>
 public interface INotificationReceiver
 {
     /// <summary>
-    /// Receive end point changed event
+    /// Receive metadata event
     /// </summary>
-    event Func<EndPointChangedEvent, CancellationToken, Task> ReceiveEndPointChangedAsync;
-
-    /// <summary>
-    /// Receive end point deleted event
-    /// </summary>
-    event Func<EndPointDeletedEvent, CancellationToken, Task> ReceiveEndPointDeletedAsync;
+    event Func<MetadataNotification, CancellationToken, Task> ReceiveMetadataAsync;
 }

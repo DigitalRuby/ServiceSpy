@@ -6,14 +6,13 @@ namespace ServiceSpy.Notifications.Udp;
 /// <summary>
 /// Receives notifications via UDP
 /// </summary>
-public class UdpNotificationReceiver : BackgroundService, INotificationReceiver, IDisposable
+public sealed class UdpNotificationReceiver : BackgroundService, INotificationReceiver, IDisposable
 {
     private readonly int port;
     private readonly ILogger logger;
 
     private UdpClient? client;
-    private Guid id;
-    private Storage.EndPoint? lastEndPoint;
+    private ServiceMetadata? lastMetadata;
 
     /// <summary>
     /// Constructor
@@ -37,10 +36,7 @@ public class UdpNotificationReceiver : BackgroundService, INotificationReceiver,
     }
 
     /// <inheritdoc />
-    public event Func<EndPointChangedEvent, CancellationToken, Task>? ReceiveEndPointChangedAsync;
-
-    /// <inheritdoc />
-    public event Func<EndPointDeletedEvent, CancellationToken, Task>? ReceiveEndPointDeletedAsync;
+    public event Func<MetadataNotification, CancellationToken, Task>? ReceiveMetadataAsync;
 
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -58,62 +54,89 @@ public class UdpNotificationReceiver : BackgroundService, INotificationReceiver,
                     {
                         MemoryStream ms = new(bytes);
                         BinaryReader reader = new(ms, Encoding.UTF8);
-                        var version = reader.Read7BitEncodedInt();
-
-                        // validate version
-                        if (version == 1)
+                        var serviceSpyGuidLength = reader.Read7BitEncodedInt();
+                        if (serviceSpyGuidLength == 16)
                         {
-                            var idBytesLength = reader.Read7BitEncodedInt();
-
-                            // validate id byte length
-                            if (idBytesLength == 16)
+                            var serviceSpyGuidBytes = reader.ReadBytes(serviceSpyGuidLength);
+                            if (serviceSpyGuidBytes.SequenceEqual(UdpNotificationSender.serviceSpyGuid))
                             {
-                                var idBytes = reader.ReadBytes(idBytesLength);
-                                Guid id = new(idBytes);
-                                bool deletion = reader.ReadBoolean();
-                                var ipBytesLength = reader.Read7BitEncodedInt();
+                                var version = reader.Read7BitEncodedInt();
 
-                                // valid ip address byte length
-                                if (ipBytesLength == 4 || ipBytesLength == 16)
+                                // validate version
+                                if (version == 1)
                                 {
-                                    var ipBytes = reader.ReadBytes(ipBytesLength);
-                                    IPAddress ip = new(ipBytes);
-                                    var port = reader.ReadInt32();
+                                    // service id length
+                                    var idBytesLength = reader.Read7BitEncodedInt();
 
-                                    // validate port
-                                    if (port > 0 && port <= ushort.MaxValue)
+                                    // validate id byte length
+                                    if (idBytesLength == 16)
                                     {
-                                        var host = reader.ReadString();
-                                        var path = reader.ReadString();
-                                        Storage.EndPoint ep = new()
-                                        {
-                                            IPAddress = ip,
-                                            Port = port,
-                                            Host = host,
-                                            Path = path
-                                        };
+                                        // service id
+                                        var idBytes = reader.ReadBytes(idBytesLength);
+                                        Guid id = new(idBytes);
 
-                                        // if we changed end points, broadcast the change
-                                        if (this.id != id || lastEndPoint is null || !lastEndPoint.Equals(ep))
+                                        var name = reader.ReadString(); // name
+                                        var serviceVersion = reader.ReadString(); // service version
+                                        var deletion = reader.ReadBoolean(); // is this a deletion?
+                                        var ipBytesLength = reader.Read7BitEncodedInt(); // ip address byte length
+
+                                        // valid ip address byte length
+                                        if (ipBytesLength == 4 || ipBytesLength == 16)
                                         {
-                                            this.id = id;
-                                            if (deletion)
+                                            // ip bytes
+                                            var ipBytes = reader.ReadBytes(ipBytesLength);
+                                            IPAddress ip = new(ipBytes);
+
+                                            // port
+                                            var port = reader.ReadInt32();
+
+                                            // validate port
+                                            if (port > 0 && port <= ushort.MaxValue)
                                             {
-                                                ReceiveEndPointChangedAsync?.Invoke(new EndPointChangedEvent
+                                                // host
+                                                var host = reader.ReadString();
+
+                                                // validate host
+                                                if (host.Length < 128)
                                                 {
-                                                    Id = id,
-                                                    Changes = new Dictionary<Storage.EndPoint, Storage.EndPoint?> { { ep, lastEndPoint } }
-                                                }, stoppingToken);
+                                                    // root path
+                                                    var path = reader.ReadString();
+
+                                                    /// validate path
+                                                    if (path.Length < 128)
+                                                    {
+                                                        // root health check path
+                                                        var healthCheckPath = reader.ReadString();
+
+                                                        // validate health check path
+                                                        if (healthCheckPath.Length < 128)
+                                                        {
+                                                            ServiceMetadata newMetadata = new()
+                                                            {
+                                                                Id = id,
+                                                                Name = name,
+                                                                Version = serviceVersion,
+                                                                IPAddress = ip,
+                                                                Port = port,
+                                                                Host = host,
+                                                                Path = path,
+                                                                HealthCheckPath = healthCheckPath
+                                                            };
+
+                                                            // if we changed end points, broadcast the change
+                                                            if (lastMetadata is null || !lastMetadata.Equals(newMetadata))
+                                                            {
+                                                                lastMetadata = newMetadata;
+                                                                ReceiveMetadataAsync?.Invoke(new MetadataNotification
+                                                                {
+                                                                    Metadata = newMetadata,
+                                                                    Deleted = deletion
+                                                                }, stoppingToken);
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
-                                            else
-                                            {
-                                                ReceiveEndPointDeletedAsync?.Invoke(new EndPointDeletedEvent
-                                                {
-                                                    Id = id,
-                                                    EndPoints = new Storage.EndPoint[] { ep }
-                                                }, stoppingToken);
-                                            }
-                                            lastEndPoint = ep;
                                         }
                                     }
                                 }

@@ -2,4 +2,4 @@
 global using System.Text;
 
 global using ServiceSpy.Notifications;
-global using ServiceSpy.Storage;
+global using ServiceSpy.Registry;

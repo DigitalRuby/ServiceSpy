@@ -6,13 +6,14 @@ namespace ServiceSpy.Notifications.Udp;
 /// <summary>
 /// Udp notification sender
 /// </summary>
-public class UdpNotificationSender : INotificationSender, IDisposable
+public sealed class UdpNotificationSender : INotificationSender, IDisposable
 {
+    internal static readonly byte[] serviceSpyGuid = Guid.Parse("62573135-7B6A-4FAC-B765-9BE43E83E444").ToByteArray();
+
     private readonly int port;
     private readonly ILogger logger;
 
-    private Guid id;
-    private Storage.EndPoint lastEndPoint;
+    private ServiceMetadata? lastMetadata;
     private Memory<byte> message;
     private UdpClient? server;
 
@@ -37,56 +38,36 @@ public class UdpNotificationSender : INotificationSender, IDisposable
     }
 
     /// <inheritdoc />
-    public Task SendEndPointChangedAsync(EndPointChangedEvent evt, CancellationToken cancelToken)
+    public Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken)
     {
-        if (evt.Changes is null || evt.Changes.Count != 1)
+        if (lastMetadata is null || !lastMetadata.Equals(evt.Metadata))
         {
-            return Task.CompletedTask;
+            lastMetadata = evt.Metadata;
+            message = CreateMessage(evt.Deleted);
         }
-
-        // see if message changed, if so make a new one, else send existing message
-        var ep = evt.Changes.First().Key;
-        if (id != evt.Id || !lastEndPoint.Equals(ep))
-        {
-            lastEndPoint = ep;
-            id = evt.Id;
-            message = CreateMessage(false);
-        }
-
         return SendMessage(message, cancelToken);
-    }
-
-    /// <inheritdoc />
-    public async Task SendEndPointDeletedAsync(EndPointDeletedEvent evt, CancellationToken cancelToken)
-    {
-        if (evt.EndPoints is not null && evt.EndPoints.Count != 0)
-        {
-            var ep = evt.EndPoints.First();
-            if (lastEndPoint.Equals(ep))
-            {
-                // we are done
-                var message = CreateMessage(true);
-                await SendMessage(message, cancelToken);
-                Dispose();
-            }
-        }
     }
 
     private Memory<byte> CreateMessage(bool deletion)
     {
-        var guidBytes = id.ToByteArray();
+        var guidBytes = lastMetadata!.Id.ToByteArray();
         MemoryStream ms = new();
         BinaryWriter writer = new(ms, Encoding.UTF8);
+        writer.Write7BitEncodedInt(serviceSpyGuid.Length);
+        writer.Write(serviceSpyGuid);
         writer.Write7BitEncodedInt(1); // version
         writer.Write7BitEncodedInt(guidBytes.Length); // id length
         writer.Write(guidBytes); // id
-        writer.Write(deletion);
-        var ipBytes = lastEndPoint.IPAddress.GetAddressBytes();
+        writer.Write(lastMetadata.Name); // name
+        writer.Write(lastMetadata.Version); // service version
+        writer.Write(deletion); // is this a deletion?
+        var ipBytes = lastMetadata.IPAddress.GetAddressBytes();
         writer.Write7BitEncodedInt(ipBytes.Length); // ip address byte length
         writer.Write(ipBytes); // ip address bytes
-        writer.Write(port);
-        writer.Write(lastEndPoint.Host); // host length + host bytes
-        writer.Write(lastEndPoint.Path); // path length + path bytes
+        writer.Write(port); // port
+        writer.Write(lastMetadata.Host); // host length + host bytes
+        writer.Write(lastMetadata.Path); // path length + path bytes
+        writer.Write(lastMetadata.HealthCheckPath); // health check path length + health check path bytes
         return ms.ToArray();
     }
 
