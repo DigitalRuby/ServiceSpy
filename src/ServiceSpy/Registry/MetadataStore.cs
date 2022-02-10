@@ -1,5 +1,8 @@
 ﻿namespace ServiceSpy.Registry;
 
+// TODO: The metadata store is hard-coded to be in memory
+// We will want an abstraction layer to be able to store metadata in different types of storage (redis, sql, etc.)
+
 /// <summary>
 /// Metadata storage interface
 /// </summary>
@@ -8,8 +11,9 @@ public interface IMetadataStore
     /// <summary>
     /// Retrieve all metadatas in the storage
     /// </summary>
+    /// <param name="serviceId">Service id to get metadatas for or null for all</param>
     /// <returns>Metadatas</returns>
-    Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync();
+    Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync(Guid? serviceId = null);
 
     /// <summary>
     /// Upsert service metadata
@@ -74,11 +78,11 @@ public sealed class MetadataStore : IDisposable
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync()
+    public Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync(Guid? serviceId = null)
     {
         lock (syncRoot)
         {
-            return Task.FromResult<IReadOnlyCollection<ServiceMetadata>>(metadatas.Keys.ToArray());
+            return Task.FromResult<IReadOnlyCollection<ServiceMetadata>>(metadatas.Keys.Where(k => serviceId is null || k.Id == serviceId).ToArray());
         }
     }
 

@@ -8,7 +8,7 @@ namespace ServiceSpy.Notifications.Udp;
 /// </summary>
 public sealed class UdpNotificationSender : INotificationSender, IDisposable
 {
-    internal static readonly byte[] serviceSpyGuid = Guid.Parse("62573135-7B6A-4FAC-B765-9BE43E83E444").ToByteArray();
+    internal static readonly byte[] serviceSpyServiceMetadataGuid = Guid.Parse("62573135-7B6A-4FAC-B765-9BE43E83E444").ToByteArray();
 
     private readonly int port;
     private readonly ILogger logger;

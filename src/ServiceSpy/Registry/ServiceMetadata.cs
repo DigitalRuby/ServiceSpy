@@ -1,4 +1,4 @@
-﻿namespace ServiceSpy.Notifications;
+﻿namespace ServiceSpy.Registry;
 
 /// <summary>
 /// Represents metadata for a service
@@ -100,7 +100,7 @@ public sealed class ServiceMetadata
         if (serviceSpyGuidLength == 16)
         {
             var serviceSpyGuidBytes = reader.ReadBytes(serviceSpyGuidLength);
-            if (serviceSpyGuidBytes.SequenceEqual(Udp.UdpNotificationSender.serviceSpyGuid))
+            if (serviceSpyGuidBytes.SequenceEqual(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid))
             {
                 var version = reader.Read7BitEncodedInt();
 
@@ -187,8 +187,8 @@ public sealed class ServiceMetadata
     public void ToBinary(Stream s, bool deletion)
     {
         BinaryWriter writer = new(s, Encoding.UTF8);
-        writer.Write7BitEncodedInt(Udp.UdpNotificationSender.serviceSpyGuid.Length);
-        writer.Write(Udp.UdpNotificationSender.serviceSpyGuid);
+        writer.Write7BitEncodedInt(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid.Length);
+        writer.Write(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid);
         writer.Write7BitEncodedInt(1); // version
         var guidBytes = Id.ToByteArray();
         writer.Write7BitEncodedInt(guidBytes.Length); // id length
