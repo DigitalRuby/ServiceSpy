@@ -50,9 +50,10 @@ public sealed class ServiceMetadata
     /// </summary>
     /// <param name="m">Other service metadata</param>
     /// <returns>True if fully equal, false otherwise</returns>
-    public bool EqualsExactly(ServiceMetadata m)
+    public bool EqualsExactly(ServiceMetadata? m)
     {
-        return this.Id == m.Id &&
+        return m is not null &&
+            this.Id == m.Id &&
             this.Name == m.Name &&
             this.Version == m.Version &&
             this.IPAddress.Equals(m.IPAddress) &&

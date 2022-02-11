@@ -8,7 +8,7 @@ namespace ServiceSpy.Notifications.Udp;
 /// </summary>
 public sealed class UdpNotificationReceiver : BackgroundService, INotificationReceiver, IDisposable
 {
-    private readonly int port;
+    private readonly IPEndPoint ipEndPoint;
     private readonly ILogger logger;
 
     private UdpClient? client;
@@ -16,11 +16,11 @@ public sealed class UdpNotificationReceiver : BackgroundService, INotificationRe
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="port">Port</param>
+    /// <param name="ipEndPoint">End point</param>
     /// <param name="logger">Logger</param>
-    public UdpNotificationReceiver(int port, ILogger<UdpNotificationReceiver> logger)
+    public UdpNotificationReceiver(IPEndPoint ipEndPoint, ILogger<UdpNotificationReceiver> logger)
     {
-        this.port = port;
+        this.ipEndPoint = ipEndPoint;
         this.logger = logger;
         CreateClient();
     }
@@ -104,9 +104,8 @@ public sealed class UdpNotificationReceiver : BackgroundService, INotificationRe
 
         try
         {
-            IPEndPoint endPoint = new(IPAddress.Any, port);
             client = new UdpClient();
-            client.Client.Bind(endPoint);
+            client.Client.Bind(ipEndPoint);
             client.EnableBroadcast = true;
         }
         catch (Exception ex)

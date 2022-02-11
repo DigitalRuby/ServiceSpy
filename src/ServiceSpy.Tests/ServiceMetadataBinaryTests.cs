@@ -4,27 +4,32 @@
 /// Tests converting service metadata to/from binary
 /// </summary>
 [TestFixture]
-public class TestServiceMetadataBinary
+public class ServiceMetadataBinaryTests
 {
     /// <summary>
     /// Test conversion without deletion and health check info
     /// </summary>
-    [Test]
-    public void TestBinaryConversionNoDeletionNoHealthCheck()
+    [TestCase(false, null)]
+    [TestCase(true, null)]
+    [TestCase(false, "")]
+    [TestCase(false, "Error")]
+    [TestCase(true, "")]
+    [TestCase(true, "Error")]
+    public void TestBinaryConversions(bool doDeletion, string? doHealthCheck, string? ip = null)
     {
         var metadata = CreateMetadata();
         MemoryStream ms = new();
-        metadata.ToBinary(ms);
+        metadata.ToBinary(ms, doDeletion, doHealthCheck);
         ms.Position = 0;
         var readMetadata = ServiceMetadata.FromBinary(ms, out bool deletion, out string? healthCheck);
 
         Assert.IsNotNull(readMetadata);
-        Assert.IsFalse(deletion);
-        Assert.IsNull(healthCheck);
+        Assert.AreEqual(doDeletion, deletion);
+        Assert.AreEqual(doHealthCheck, healthCheck);
         Assert.IsTrue(metadata.EqualsExactly(readMetadata!));
     }
 
-    private static ServiceMetadata CreateMetadata()
+    internal static ServiceMetadata CreateMetadata()
     {
         return new ServiceMetadata
         {

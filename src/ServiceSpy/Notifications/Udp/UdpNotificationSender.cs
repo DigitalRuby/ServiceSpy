@@ -10,7 +10,7 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
 {
     internal static readonly byte[] serviceSpyServiceMetadataGuid = Guid.Parse("62573135-7B6A-4FAC-B765-9BE43E83E444").ToByteArray();
 
-    private readonly int port;
+    private readonly IPEndPoint ipEndPoint;
     private readonly ILogger logger;
 
     private ServiceMetadata? lastMetadata;
@@ -21,11 +21,11 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="port">Port to broadcast on</param>
+    /// <param name="ipEndPoint">End point</param>
     /// <param name="logger">Logger</param>
-    public UdpNotificationSender(int port, ILogger<UdpNotificationSender> logger)
+    public UdpNotificationSender(IPEndPoint ipEndPoint, ILogger<UdpNotificationSender> logger)
     {
-        this.port = port;
+        this.ipEndPoint = ipEndPoint;
         this.logger = logger;
         CreateServer();
     }
@@ -39,7 +39,7 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
     }
 
     /// <inheritdoc />
-    public Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken)
+    public Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken = default)
     {
         if (lastMetadata is null ||
             evt.Deleted ||
@@ -105,9 +105,8 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
 
         try
         {
-            IPEndPoint endPoint = new(System.Net.IPAddress.Broadcast, port);
             server = new UdpClient();
-            server.Connect(endPoint);
+            server.Connect(ipEndPoint);
             server.EnableBroadcast = true;
         }
         catch (Exception ex)
