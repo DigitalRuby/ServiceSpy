@@ -15,7 +15,7 @@ public sealed class ServiceMetadataBinaryTests
     [TestCase(false, "Error")]
     [TestCase(true, "")]
     [TestCase(true, "Error")]
-    public void TestBinaryConversions(bool doDeletion, string? doHealthCheck, string? ip = null)
+    public void TestBinaryConversions(bool doDeletion, string? doHealthCheck)
     {
         var metadata = TestUtil.CreateMetadata();
         MemoryStream ms = new();

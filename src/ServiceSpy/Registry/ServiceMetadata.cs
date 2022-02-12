@@ -41,7 +41,7 @@ public sealed class ServiceMetadata
     public string Path { get; init; } = string.Empty;
 
     /// <summary>
-    /// Health check path
+    /// Health check path, including leading slash
     /// </summary>
     public string HealthCheckPath { get; init; } = string.Empty;
 

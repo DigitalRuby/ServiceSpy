@@ -1,7 +1,7 @@
 ﻿namespace ServiceSpy.HealthChecks;
 
-// TODO: The health check store is hard-coded to be in memory
-// We will want an abstraction layer to be able to store health check results in different types of storage (redis, sql, etc.)
+// TODO: The health check store is hard-coded to be in memory...
+// Add an abstraction layer to be able to store health check results in different types of storage (redis, sql, etc.)
 
 /// <summary>
 /// Stores results of health checks for service metadata
@@ -15,6 +15,13 @@ public interface IMetadataHealthCheckStore
     /// <param name="error">Error, empty string for healthy</param>
     /// <returns>Task</returns>
     Task SetHealthAsync(ServiceMetadata metadata, string error);
+
+    /// <summary>
+    /// Get service metadata health
+    /// </summary>
+    /// <param name="metadata">Service metadata</param>
+    /// <returns>Task of string containing null if service metadata not found, empty string if healthy, otherwise a health check error</returns>
+    Task<string?> GetHealthAsync(ServiceMetadata metadata);
 }
 
 /// <inheritdoc />
@@ -35,7 +42,7 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
     /// Constructor
     /// </summary>
     /// <param name="logger">Logger</param>
-    public MetadataHealthCheckStore(ILogger<MetadataStore> logger)
+    public MetadataHealthCheckStore(ILogger<MetadataHealthCheckStore> logger)
     {
         this.logger = logger;
     }
@@ -114,6 +121,20 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task<string?> GetHealthAsync(ServiceMetadata metadata)
+    {
+        if (healthyMetadatas.ContainsKey(metadata))
+        {
+            return Task.FromResult<string?>(string.Empty);
+        }
+        else if (unhealthyMetadatas.TryGetValue(metadata, out HealthCheckStatus? status))
+        {
+            return Task.FromResult<string?>(status.LastError);
+        }
+        return Task.FromResult<string?>(null);
     }
 
     /// <inheritdoc />

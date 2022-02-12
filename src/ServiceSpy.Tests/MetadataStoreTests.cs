@@ -4,7 +4,7 @@
 /// Metadata store tests
 /// </summary>
 [TestFixture]
-public sealed class MetadataStoreTests : INotificationReceiver, HealthChecks.IMetadataHealthCheckStore
+public sealed class MetadataStoreTests : INotificationSender, INotificationReceiver, HealthChecks.IMetadataHealthCheckStore
 {
     private MetadataStore? metadataStore;
 
@@ -68,6 +68,23 @@ public sealed class MetadataStoreTests : INotificationReceiver, HealthChecks.IMe
         Assert.IsTrue(all.Contains(metadata4));
     }
 
+    /// <summary>
+    /// Test service registration loop
+    /// </summary>
+    /// <returns>Task</returns>
+    [Test]
+    public async Task TestServiceRegistrationLoop()
+    {
+        var metadata1 = TestUtil.CreateMetadata();
+        using ServiceRegistrationLoop loop = new(metadata1, this, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
+        await loop.StartAsync(default);
+        await Task.Delay(100);
+        var all = await metadataStore!.GetMetadatasAsync();
+        Assert.AreEqual(1, all.Count);
+        Assert.IsTrue(all.Contains(metadata1));
+    }
+
+
     /// <inheritdoc />
     public event Func<MetadataNotification, CancellationToken, Task>? ReceiveMetadataAsync;
 
@@ -75,5 +92,17 @@ public sealed class MetadataStoreTests : INotificationReceiver, HealthChecks.IMe
     public Task SetHealthAsync(ServiceMetadata metadata, string error)
     {
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken = default)
+    {
+        return metadataStore!.UpsertAsync(evt.Metadata, cancelToken);
+    }
+
+    /// <inheritdoc />
+    public Task<string?> GetHealthAsync(ServiceMetadata metadata)
+    {
+        return Task.FromResult<string?>(null);
     }
 }

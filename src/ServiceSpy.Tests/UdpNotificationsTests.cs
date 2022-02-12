@@ -15,6 +15,10 @@ public sealed class UdpNotificationsTests
     private static readonly System.Net.IPAddress localHost = System.Net.IPAddress.Parse("127.0.0.1");
     private const int port = 51234;
 
+    /// <summary>
+    /// Test we can send/receive notifications via udp
+    /// </summary>
+    /// <returns>Task</returns>
     [Test]
     public async Task TestSendReceive()
     {
@@ -45,5 +49,30 @@ public sealed class UdpNotificationsTests
         Assert.IsFalse(deleted);
         Assert.IsNull(healthCheck);
         Assert.IsTrue(metadata.EqualsExactly(foundMetadata));
+    }
+
+    /// <summary>
+    /// Test we can send and receive notifications through service loop and udp
+    /// </summary>
+    /// <returns>Task</returns>
+    [Test]
+    public async Task TestServiceLoopRegistrationUdp()
+    {
+        ServiceMetadata metadata = TestUtil.CreateMetadata();
+        UdpNotificationSender sender = new(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationSender>());
+        UdpNotificationReceiver receiver = new(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationReceiver>());
+        HealthChecks.MetadataHealthCheckStore healthCheckStore = new(new NullLogger<HealthChecks.MetadataHealthCheckStore>());
+        MetadataStore store = new(receiver, healthCheckStore);
+        receiver.ReceiveMetadataAsync += (MetadataNotification arg1, CancellationToken arg2) =>
+        {
+            return Task.CompletedTask;
+        };
+        await receiver.StartAsync(default);
+        ServiceRegistrationLoop loop = new(metadata, sender, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
+        await loop.StartAsync(default);
+        await Task.Delay(100);
+        var all = await store.GetMetadatasAsync();
+        Assert.AreEqual(1, all.Count);
+        Assert.IsTrue(all.Contains(metadata));
     }
 }

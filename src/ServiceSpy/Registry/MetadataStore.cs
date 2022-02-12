@@ -12,22 +12,25 @@ public interface IMetadataStore
     /// Retrieve all metadatas in the storage
     /// </summary>
     /// <param name="serviceId">Service id to get metadatas for or null for all</param>
+    /// <param name="cancelToken">Cancel token</param>
     /// <returns>Metadatas</returns>
-    Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync(Guid? serviceId = null);
+    Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync(Guid? serviceId = null, CancellationToken cancelToken = default);
 
     /// <summary>
     /// Upsert service metadata
     /// </summary>
     /// <param name="metadata">Service metadata</param>
+    /// <param name="cancelToken">Cancel token</param>
     /// <returns>Task</returns>
-    Task UpsertAsync(ServiceMetadata metadata);
+    Task UpsertAsync(ServiceMetadata metadata, CancellationToken cancelToken = default);
 
     /// <summary>
     /// Remove service metadata
     /// </summary>
     /// <param name="metadata">Service metadata</param>
+    /// <param name="cancelToken">Cancel token</param>
     /// <returns>Task of bool that specifies if metadata was removed</returns>
-    Task<bool> RemoveAsync(ServiceMetadata metadata);
+    Task<bool> RemoveAsync(ServiceMetadata metadata, CancellationToken cancelToken = default);
 }
 
 /// <summary>
@@ -62,7 +65,7 @@ public sealed class MetadataStore : IDisposable
     }
 
     /// <inheritdoc />
-    public Task UpsertAsync(ServiceMetadata metadata)
+    public Task UpsertAsync(ServiceMetadata metadata, CancellationToken cancelToken = default)
     {
         lock (syncRoot)
         {
@@ -72,7 +75,7 @@ public sealed class MetadataStore : IDisposable
     }
 
     /// <inheritdoc />
-    public Task<bool> RemoveAsync(ServiceMetadata metadata)
+    public Task<bool> RemoveAsync(ServiceMetadata metadata, CancellationToken cancelToken = default)
     {
         lock (syncRoot)
         {
@@ -81,7 +84,7 @@ public sealed class MetadataStore : IDisposable
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync(Guid? serviceId = null)
+    public Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync(Guid? serviceId = null, CancellationToken cancelToken = default)
     {
         lock (syncRoot)
         {
@@ -99,11 +102,11 @@ public sealed class MetadataStore : IDisposable
 
         if (evt.Deleted)
         {
-            await RemoveAsync(evt.Metadata);
+            await RemoveAsync(evt.Metadata, cancelToken);
         }
         else
         {
-            await UpsertAsync(evt.Metadata);
+            await UpsertAsync(evt.Metadata, cancelToken);
         }
     }
 }
