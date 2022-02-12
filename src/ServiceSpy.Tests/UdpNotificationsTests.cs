@@ -10,7 +10,7 @@ namespace ServiceSpy.Tests;
 /// Test udp send/receive notifications
 /// </summary>
 [TestFixture]
-public class UdpNotificationsTests
+public sealed class UdpNotificationsTests
 {
     private static readonly System.Net.IPAddress localHost = System.Net.IPAddress.Parse("127.0.0.1");
     private const int port = 51234;
@@ -20,7 +20,7 @@ public class UdpNotificationsTests
     {
         const int iterations = 10;
         int count = 0;
-        ServiceMetadata metadata = ServiceMetadataBinaryTests.CreateMetadata();
+        ServiceMetadata metadata = TestUtil.CreateMetadata();
         ServiceMetadata? foundMetadata = null;
         bool deleted = false;
         string? healthCheck = null;

@@ -26,8 +26,8 @@ public interface IMetadataStore
     /// Remove service metadata
     /// </summary>
     /// <param name="metadata">Service metadata</param>
-    /// <returns>Task</returns>
-    Task RemoveAsync(ServiceMetadata metadata);
+    /// <returns>Task of bool that specifies if metadata was removed</returns>
+    Task<bool> RemoveAsync(ServiceMetadata metadata);
 }
 
 /// <summary>
@@ -72,13 +72,12 @@ public sealed class MetadataStore : IDisposable
     }
 
     /// <inheritdoc />
-    public Task RemoveAsync(ServiceMetadata metadata)
+    public Task<bool> RemoveAsync(ServiceMetadata metadata)
     {
         lock (syncRoot)
         {
-            metadatas.Remove(metadata);
+            return Task.FromResult<bool>(metadatas.Remove(metadata));
         }
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
