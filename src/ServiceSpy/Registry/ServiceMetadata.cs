@@ -21,6 +21,11 @@ public sealed class ServiceMetadata
     public string Version { get; init; } = string.Empty;
 
     /// <summary>
+    /// Group - this would usually represent an availability zone, region or general geo location
+    /// </summary>
+    public string Group { get; init; } = string.Empty;
+
+    /// <summary>
     /// IP address
     /// </summary>
     public System.Net.IPAddress IPAddress { get; init; } = System.Net.IPAddress.Any;
@@ -56,6 +61,7 @@ public sealed class ServiceMetadata
             this.Id == m.Id &&
             this.Name == m.Name &&
             this.Version == m.Version &&
+            this.Group == m.Group &&
             this.IPAddress.Equals(m.IPAddress) &&
             this.Port == m.Port &&
             this.Host == m.Host &&
@@ -143,6 +149,7 @@ public sealed class ServiceMetadata
                         healthCheck = reader.ReadString(); // health check
                         healthCheck = (healthCheck == "!" ? null : healthCheck);
 
+                        var group = reader.ReadString();
                         var ipBytesLength = reader.Read7BitEncodedInt(); // ip address byte length
 
                         // valid ip address byte length
@@ -181,6 +188,7 @@ public sealed class ServiceMetadata
                                                 Id = id,
                                                 Name = name,
                                                 Version = serviceVersion,
+                                                Group = group,
                                                 IPAddress = ip,
                                                 Port = port,
                                                 Host = host,
@@ -221,6 +229,7 @@ public sealed class ServiceMetadata
         writer.Write(Version); // service version
         writer.Write(deletion); // is this a deletion?
         writer.Write(healthCheck is null ? "!" : healthCheck);
+        writer.Write(Group); // group
         var ipBytes = IPAddress.GetAddressBytes();
         writer.Write7BitEncodedInt(ipBytes.Length); // ip address byte length
         writer.Write(ipBytes); // ip address bytes

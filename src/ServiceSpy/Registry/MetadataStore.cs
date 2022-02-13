@@ -1,8 +1,5 @@
 ﻿namespace ServiceSpy.Registry;
 
-// TODO: The metadata store is hard-coded to be in memory
-// We will want an abstraction layer to be able to store metadata in different types of storage (redis, sql, etc.)
-
 /// <summary>
 /// Metadata storage interface
 /// </summary>
@@ -15,6 +12,14 @@ public interface IMetadataStore
     /// <param name="cancelToken">Cancel token</param>
     /// <returns>Metadatas</returns>
     Task<IReadOnlyCollection<ServiceMetadata>> GetMetadatasAsync(Guid? serviceId = null, CancellationToken cancelToken = default);
+
+    /// <summary>
+    /// Retrieve a set of healthy metadatas that can be used to attempt api calls
+    /// </summary>
+    /// <param name="cache">Whether to allow cached data</param>
+    /// <param name="cancelToken">Cancel token</param>
+    /// <returns>Metadatas</returns>
+    Task<IReadOnlyCollection<ServiceMetadata>> GetHealthyMetadatasAsync(bool cache = true, CancellationToken cancelToken = default);
 
     /// <summary>
     /// Upsert service metadata
@@ -42,18 +47,26 @@ public sealed class MetadataStore : IMetadataStore, IDisposable
 
     private readonly INotificationReceiver notificationReceiver;
     private readonly HealthChecks.IMetadataHealthCheckStore healthCheckStore;
+    private readonly TimeSpan healthyMetadataCacheTime;
 
     private readonly Dictionary<ServiceMetadata, ServiceMetadata> metadatas = new();
+
+    private List<ServiceMetadata> healthyMetadatasCache = new();
+    private DateTimeOffset lastHealthyMetadatasCacheTime;
 
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="notificationReceiver">Notification receiver</param>
     /// <param name="healthCheckStore">Health check store</param>
-    public MetadataStore(INotificationReceiver notificationReceiver, HealthChecks.IMetadataHealthCheckStore healthCheckStore)
+    /// <param name="healthyMetadataCacheTime">Amount of time to cache healthy metadatas, null for 5 seconds</param>
+    public MetadataStore(INotificationReceiver notificationReceiver,
+        HealthChecks.IMetadataHealthCheckStore healthCheckStore,
+        TimeSpan? healthyMetadataCacheTime = default)
     {
         this.notificationReceiver = notificationReceiver;
         this.healthCheckStore = healthCheckStore;
+        this.healthyMetadataCacheTime = healthyMetadataCacheTime is not null ? healthyMetadataCacheTime.Value : TimeSpan.FromSeconds(5.0);
         notificationReceiver.ReceiveMetadataAsync += ReceiveMetadataAsync;
     }
 
@@ -90,6 +103,68 @@ public sealed class MetadataStore : IMetadataStore, IDisposable
         {
             return Task.FromResult<IReadOnlyCollection<ServiceMetadata>>(metadatas.Keys.Where(k => serviceId is null || k.Id == serviceId).ToArray());
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyCollection<ServiceMetadata>> GetHealthyMetadatasAsync(bool cache = true, CancellationToken cancelToken = default)
+    {
+        static async Task AddHealthyMetadatas(List<ServiceMetadata> result, IEnumerable<ServiceMetadata> source,
+            int maxCount, HealthChecks.IMetadataHealthCheckStore healthCheckStore)
+        {
+            int count = 0;
+            foreach (var item in source)
+            {
+                if (await healthCheckStore.GetHealthAsync(item) == string.Empty)
+                {
+                    result.Add(item);
+                    if (++count >= maxCount)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // check if we have cached data
+        if (cache && (DateTimeOffset.UtcNow - lastHealthyMetadatasCacheTime) < healthyMetadataCacheTime)
+        {
+            return healthyMetadatasCache;
+        }
+
+        List<ServiceMetadata> result = new();
+        IGrouping<string, ServiceMetadata>[] grouping;
+        lock (syncRoot)
+        {
+            grouping = metadatas.Keys.GroupBy(x => x.Group).ToArray();
+        }
+        var groupCount = grouping.Length;
+        foreach (var group in grouping)
+        {
+            if (groupCount < 2)
+            {
+                // one group - three
+                await AddHealthyMetadatas(result, group, 3, healthCheckStore);
+            }
+            else if (groupCount < 3)
+            {
+                // two groups - two
+                await AddHealthyMetadatas(result, group, 2, healthCheckStore);
+            }
+            else
+            {
+                // three+ groups - one
+                await AddHealthyMetadatas(result, group, 1, healthCheckStore);
+            }
+        }
+
+        // only cache if something healthy was returned
+        if (cache && result.Count != 0)
+        {
+            healthyMetadatasCache = result;
+            lastHealthyMetadatasCacheTime = DateTimeOffset.UtcNow;
+        }
+
+        return result;
     }
 
     private async Task ReceiveMetadataAsync(MetadataNotification evt, CancellationToken cancelToken)

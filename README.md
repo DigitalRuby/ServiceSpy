@@ -8,7 +8,13 @@ If you want a centralized service discovery framework, you can use ZooKeeper, Co
 
 By default, UDP is used and each service that registers will broadcast service metadata to the local network on a timer.
 
-For centralized cases, or where WAN (Internet) scope is needed, you can configure Service Spy to use DNS or a centralized datastore for service metadata.
+## Overview ##
 
-TODO: Add group id to metadata to handle availability zones and regions
-TODO: Add method to get end points for service calls, IEnumerable for each group id
+TODO: Implement all of these sections
+- Metadata store
+- Metadata health check store
+- Implementing custom metadata and metadata health check stores (needs abstraction of storage from interface to the above stores)
+- UDP send/receive
+- Implementing custom send/receive notifications (WAN/Internet scope)
+- Making api calls
+- Example projects (api service, health check service)

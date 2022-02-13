@@ -6,6 +6,7 @@
 public static class TestUtil
 {
     internal static readonly Guid id = Guid.NewGuid();
+    internal static readonly string group = "test";
     internal static readonly string host = "www.digitalruby.com";
     internal static readonly System.Net.IPAddress ipAddress = System.Net.IPAddress.Parse("55.55.55.55");
     internal static readonly string name = "name";
@@ -18,6 +19,7 @@ public static class TestUtil
     /// Create a test service metadata
     /// </summary>
     /// <param name="id">Override id</param>
+    /// <param name="group">Override group</param>
     /// <param name="ip">Override ip</param>
     /// <param name="port"">Override port</param>
     /// <param name="name">Override name</param>
@@ -27,6 +29,7 @@ public static class TestUtil
     /// <param name="version">Override version</param>
     /// <returns>Test service metadata</returns>
     public static ServiceMetadata CreateMetadata(Guid? id = null,
+        string? group = null,
         string? ip = null,
         int? port = null,
         string? name = null,
@@ -39,6 +42,7 @@ public static class TestUtil
         {
             Id = id ?? TestUtil.id,
             Host = host ?? TestUtil.host,
+            Group = group ?? TestUtil.group,
             IPAddress = string.IsNullOrWhiteSpace(ip) ? ipAddress : System.Net.IPAddress.Parse(ip),
             Name = name ?? TestUtil.name,
             Path = path ?? TestUtil.path,
