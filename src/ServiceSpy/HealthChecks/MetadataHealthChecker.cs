@@ -26,7 +26,7 @@ public sealed class MetadataHealthChecker : BackgroundService, IMetadataHealthCh
         public int Failures { get; set; }
     }
 
-    private static readonly TimeSpan healthCheckInterval = TimeSpan.FromSeconds(10.0);
+    private readonly TimeSpan healthCheckInterval;
 
     private readonly HealthChecks.IHealthCheckExecutor healthChecker;
     private readonly IMetadataStore metadataStore;
@@ -41,15 +41,18 @@ public sealed class MetadataHealthChecker : BackgroundService, IMetadataHealthCh
     /// <param name="healthChecker">Health checker</param>
     /// <param name="metadataStore">Metadata store</param>
     /// <param name="metadataHealthCheckStore">Metadata health check store</param>
+    /// <param name="healthCheckInterval">How often to perform health checks</param>
     /// <param name="logger">Logger</param>
     public MetadataHealthChecker(HealthChecks.IHealthCheckExecutor healthChecker,
         IMetadataStore metadataStore,
         IMetadataHealthCheckStore metadataHealthCheckStore,
-        ILogger<MetadataStore> logger)
+        TimeSpan healthCheckInterval,
+        ILogger<MetadataHealthChecker> logger)
     {
         this.healthChecker = healthChecker;
         this.metadataStore = metadataStore;
         this.metadataHealthCheckStore = metadataHealthCheckStore;
+        this.healthCheckInterval = healthCheckInterval;
         this.logger = logger;
     }
 
@@ -80,16 +83,13 @@ public sealed class MetadataHealthChecker : BackgroundService, IMetadataHealthCh
         // perform health checks in parallel
         foreach (var metadata in metadatas)
         {
-            tasks.Add(healthChecker.Execute(metadata));
+            tasks.Add(healthChecker.ExecuteAsync(metadata));
         }
 
         // wait for all health checks
         await Task.WhenAll(tasks);
 
         // take the results and modify the health check store
-        foreach (var task in tasks)
-        {
-            await metadataHealthCheckStore.SetHealthAsync(task.Result.Item1, task.Result.Item2);
-        }
+        await metadataHealthCheckStore.SetHealthAsync(tasks.Select(t => (t.Result.Item1, t.Result.Item2)));
     }
 }

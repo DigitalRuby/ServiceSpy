@@ -61,7 +61,8 @@ public sealed class UdpNotificationsTests
         ServiceMetadata metadata = TestUtil.CreateMetadata();
         UdpNotificationSender sender = new(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationSender>());
         UdpNotificationReceiver receiver = new(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationReceiver>());
-        HealthChecks.MetadataHealthCheckStore healthCheckStore = new(new NullLogger<HealthChecks.MetadataHealthCheckStore>());
+        HealthChecks.MetadataHealthCheckStore healthCheckStore = new(TimeSpan.FromMilliseconds(20), TimeSpan.FromMilliseconds(100),
+            new NullLogger<HealthChecks.MetadataHealthCheckStore>());
         MetadataStore store = new(receiver, healthCheckStore);
         receiver.ReceiveMetadataAsync += (MetadataNotification arg1, CancellationToken arg2) =>
         {

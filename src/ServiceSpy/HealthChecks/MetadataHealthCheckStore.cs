@@ -11,10 +11,9 @@ public interface IMetadataHealthCheckStore
     /// <summary>
     /// Set the health of a service metadata
     /// </summary>
-    /// <param name="metadata">Service metadata</param>
-    /// <param name="error">Error, empty string for healthy</param>
+    /// <param name="results">Health check results</param>
     /// <returns>Task</returns>
-    Task SetHealthAsync(ServiceMetadata metadata, string error);
+    Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results);
 
     /// <summary>
     /// Get service metadata health
@@ -28,10 +27,11 @@ public interface IMetadataHealthCheckStore
 public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealthCheckStore
 {
     private const int maxFailuresBeforeUnhealthy = 3;
-    private static readonly TimeSpan healthCheckInterval = TimeSpan.FromSeconds(10.0);
-    private static readonly TimeSpan healthCheckDeadTimeSpan = TimeSpan.FromMinutes(5.0);
 
     private readonly object syncRoot = new();
+
+    private readonly TimeSpan cleanupInterval;
+    private readonly TimeSpan expireTimeSpan;
     private readonly ILogger logger;
 
     private readonly Dictionary<ServiceMetadata, HealthCheckStatus> healthyMetadatas = new();
@@ -41,81 +41,98 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
     /// <summary>
     /// Constructor
     /// </summary>
+    /// <param name="cleanupInterval">Cleanup interval, how often to check for metadatas that are expired</param>
+    /// <param name="expireTimeSpan">TimeSpan after which health checks that haven't reported back will be removed</param>
     /// <param name="logger">Logger</param>
-    public MetadataHealthCheckStore(ILogger<MetadataHealthCheckStore> logger)
+    public MetadataHealthCheckStore(TimeSpan cleanupInterval,
+        TimeSpan expireTimeSpan,
+        ILogger<MetadataHealthCheckStore> logger)
     {
+        this.cleanupInterval = cleanupInterval;
+        this.expireTimeSpan = expireTimeSpan;
         this.logger = logger;
     }
 
     /// <inheritdoc />
-    public Task SetHealthAsync(ServiceMetadata metadata, string error)
+    public Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results)
     {
         lock (syncRoot)
         {
-            // if we are healthy mark the healthy timestamp
-            if (string.IsNullOrWhiteSpace(error))
+            foreach (var item in results)
             {
-                if (unhealthyMetadatas.Remove(metadata, out HealthCheckStatus? status))
-                {
-                    // reset status
-                    status.Clear();
+                var metadata = item.metadata;
+                var error = item.error;
 
-                    // put back in healthy pool
-                    healthyMetadatas[metadata] = status;
-
-                    // TODO: Notify of change in status
-                }
-                else if (healthyMetadatas.TryGetValue(metadata, out status))
+                // if we are healthy mark the healthy timestamp
+                if (string.IsNullOrWhiteSpace(error))
                 {
-                    // already in healthy pool, clear status
-                    status.Clear();
-                }
-                else
-                {
-                    // not in either pool, add to healthy pool
-                    healthyMetadatas[metadata] = new();
-                }
-            }
-            else if (error == "X")
-            {
-                // nuke
-                if (healthyMetadatas.Remove(metadata))
-                {
-                    // TODO: Notify of status change
-                }
-
-                if (unhealthyMetadatas.Remove(metadata))
-                {
-                    // TODO: Notify of status change
-                }
-            }
-            else
-            {
-                // move to unhealthy pool if needed
-                if (!healthyMetadatas.TryGetValue(metadata, out HealthCheckStatus? status))
-                {
-                    // already in unhealthy pool
-                    if (unhealthyMetadatas.TryGetValue(metadata, out status))
+                    if (unhealthyMetadatas.Remove(metadata, out HealthCheckStatus? status))
                     {
-                        status.Failures++;
-                        status.LastError = error;
+                        // reset status, recovered
+                        status.Clear();
+
+                        // put back in healthy pool
+                        healthyMetadatas[metadata] = status;
+
+                        // TODO: Notify of change in status
+                    }
+                    else if (healthyMetadatas.TryGetValue(metadata, out status))
+                    {
+                        // already in healthy pool, clear status
+                        status.Clear();
                     }
                     else
                     {
-                        // new failed health check entry, still healthy until more failures
-                        healthyMetadatas[metadata] = new() { Failures = 1, LastError = error };
+                        // not in either pool, add to healthy pool
+                        healthyMetadatas[metadata] = new();
+                    }
+                }
+                else if (error == "X")
+                {
+                    // nuke
+                    if (healthyMetadatas.Remove(metadata))
+                    {
+                        // TODO: Notify of status change
+                    }
 
+                    if (unhealthyMetadatas.Remove(metadata))
+                    {
                         // TODO: Notify of status change
                     }
                 }
-                else if (++status.Failures > maxFailuresBeforeUnhealthy)
+                else
                 {
-                    // move from healthy to unhealthy
-                    healthyMetadatas.Remove(metadata);
-                    status.LastError = error;
-                    unhealthyMetadatas[metadata] = status;
+                    // move to unhealthy pool if needed
+                    if (!healthyMetadatas.TryGetValue(metadata, out HealthCheckStatus? status))
+                    {
+                        // already in unhealthy pool
+                        if (unhealthyMetadatas.TryGetValue(metadata, out status))
+                        {
+                            status.Fail(error);
+                        }
+                        else
+                        {
+                            // new failed health check entry, still healthy until more failures
+                            healthyMetadatas[metadata] = new() { Failures = 1, LastError = error };
 
-                    // TODO: Notify of status change
+                            // TODO: Notify of status change
+                        }
+                    }
+                    else if (++status.Failures > maxFailuresBeforeUnhealthy)
+                    {
+                        // move from healthy to unhealthy
+                        healthyMetadatas.Remove(metadata);
+                        status.LastError = error;
+                        status.LastHealthCheck = DateTimeOffset.UtcNow;
+                        unhealthyMetadatas[metadata] = status;
+
+                        // TODO: Notify of status change
+                    }
+                    else
+                    {
+                        // update last check only
+                        status.LastHealthCheck = DateTimeOffset.UtcNow;
+                    }
                 }
             }
         }
@@ -126,13 +143,16 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
     /// <inheritdoc />
     public Task<string?> GetHealthAsync(ServiceMetadata metadata)
     {
-        if (healthyMetadatas.ContainsKey(metadata))
+        lock (syncRoot)
         {
-            return Task.FromResult<string?>(string.Empty);
-        }
-        else if (unhealthyMetadatas.TryGetValue(metadata, out HealthCheckStatus? status))
-        {
-            return Task.FromResult<string?>(status.LastError);
+            if (healthyMetadatas.ContainsKey(metadata))
+            {
+                return Task.FromResult<string?>(string.Empty);
+            }
+            else if (unhealthyMetadatas.TryGetValue(metadata, out HealthCheckStatus? status))
+            {
+                return Task.FromResult<string?>(status.LastError);
+            }
         }
         return Task.FromResult<string?>(null);
     }
@@ -150,7 +170,7 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
             {
                 logger.LogError(ex, "Error executing metadata health check store");
             }
-            await Task.Delay(healthCheckInterval, stoppingToken);
+            await Task.Delay(cleanupInterval, stoppingToken);
         }
     }
 
@@ -160,14 +180,14 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
         {
             foreach (var kv in healthyMetadatas)
             {
-                if ((DateTimeOffset.UtcNow - kv.Value.LastHealthCheck) > healthCheckDeadTimeSpan)
+                if ((DateTimeOffset.UtcNow - kv.Value.LastHealthCheck) > expireTimeSpan)
                 {
                     removals.Add(kv.Key);
                 }
             }
             foreach (var kv in unhealthyMetadatas)
             {
-                if ((DateTimeOffset.UtcNow - kv.Value.LastHealthCheck) > healthCheckDeadTimeSpan)
+                if ((DateTimeOffset.UtcNow - kv.Value.LastHealthCheck) > expireTimeSpan)
                 {
                     removals.Add(kv.Key);
                 }

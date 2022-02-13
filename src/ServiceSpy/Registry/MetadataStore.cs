@@ -36,7 +36,7 @@ public interface IMetadataStore
 /// <summary>
 /// Stores metadata for services and performs health checks
 /// </summary>
-public sealed class MetadataStore : IDisposable
+public sealed class MetadataStore : IMetadataStore, IDisposable
 {
     private readonly object syncRoot = new();
 
@@ -97,7 +97,7 @@ public sealed class MetadataStore : IDisposable
         // if we have health check info, pass it on
         if (evt.HealthCheck is not null)
         {
-            await healthCheckStore.SetHealthAsync(evt.Metadata, evt.HealthCheck);
+            await healthCheckStore.SetHealthAsync(new[] { (evt.Metadata, evt.HealthCheck) });
         }
 
         if (evt.Deleted)

@@ -1,4 +1,6 @@
-﻿namespace ServiceSpy.Tests;
+﻿using System.Collections.Generic;
+
+namespace ServiceSpy.Tests;
 
 /// <summary>
 /// Metadata store tests
@@ -89,7 +91,7 @@ public sealed class MetadataStoreTests : INotificationSender, INotificationRecei
     public event Func<MetadataNotification, CancellationToken, Task>? ReceiveMetadataAsync;
 
     /// <inheritdoc />
-    public Task SetHealthAsync(ServiceMetadata metadata, string error)
+    public Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results)
     {
         return Task.CompletedTask;
     }

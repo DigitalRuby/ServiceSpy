@@ -10,7 +10,7 @@ public interface IHealthCheckExecutor
     /// </summary>
     /// <param name="metadata">Service metadata</param>
     /// <returns>Task of string, metadata, empty string if success, otherwise an error string of why the health check failed</returns>
-    Task<(ServiceMetadata, string)> Execute(ServiceMetadata metadata);
+    Task<(ServiceMetadata, string)> ExecuteAsync(ServiceMetadata metadata);
 }
 
 /// <inheritdoc />
@@ -33,7 +33,7 @@ public class HealthCheckExecutor : IHealthCheckExecutor
     }
 
     /// <inheritdoc />
-    public async Task<(ServiceMetadata, string)> Execute(ServiceMetadata metadata)
+    public async Task<(ServiceMetadata, string)> ExecuteAsync(ServiceMetadata metadata)
     {
         try
         {
@@ -41,15 +41,20 @@ public class HealthCheckExecutor : IHealthCheckExecutor
                 (metadata.Port != 80 && metadata.Port != 443 ? ":" + metadata.Port : string.Empty);
             var msg = new HttpRequestMessage(HttpMethod.Get, url);
             var result = await client.SendAsync(msg);
-            if (!result.IsSuccessStatusCode)
+            if (result.IsSuccessStatusCode)
             {
-                return (metadata, await result.Content.ReadAsStringAsync());
+                return (metadata, string.Empty);
             }
+            string error = await result.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(error))
+            {
+                error = result.StatusCode.ToString();
+            }
+            return (metadata, error);
         }
         catch (Exception ex)
         {
             return (metadata, ex.Message);
         }
-        return (metadata, string.Empty);
     }
 }

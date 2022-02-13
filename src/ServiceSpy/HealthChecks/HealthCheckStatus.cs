@@ -12,6 +12,13 @@ public sealed class HealthCheckStatus
         Failures = 0;
     }
 
+    internal void Fail(string error)
+    {
+        Failures++;
+        LastError = error;
+        LastHealthCheck = DateTimeOffset.UtcNow;
+    }
+
     /// <summary>
     /// Last health check timestamp
     /// </summary>
