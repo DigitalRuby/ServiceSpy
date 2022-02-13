@@ -12,15 +12,17 @@ public interface IMetadataHealthCheckStore
     /// Set the health of a service metadata
     /// </summary>
     /// <param name="results">Health check results</param>
+    /// <param name="cancelToken">Cancel token</param>
     /// <returns>Task</returns>
-    Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results);
+    Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results, CancellationToken cancelToken = default);
 
     /// <summary>
     /// Get service metadata health
     /// </summary>
     /// <param name="metadata">Service metadata</param>
+    /// <param name="cancelToken">Cancel token</param>
     /// <returns>Task of string containing null if service metadata not found, empty string if healthy, otherwise a health check error</returns>
-    Task<string?> GetHealthAsync(ServiceMetadata metadata);
+    Task<string?> GetHealthAsync(ServiceMetadata metadata, CancellationToken cancelToken = default);
 }
 
 /// <inheritdoc />
@@ -54,7 +56,7 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
     }
 
     /// <inheritdoc />
-    public Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results)
+    public Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results, CancellationToken cancelToken = default)
     {
         lock (syncRoot)
         {
@@ -141,7 +143,7 @@ public sealed class MetadataHealthCheckStore : BackgroundService, IMetadataHealt
     }
 
     /// <inheritdoc />
-    public Task<string?> GetHealthAsync(ServiceMetadata metadata)
+    public Task<string?> GetHealthAsync(ServiceMetadata metadata, CancellationToken cancelToken = default)
     {
         lock (syncRoot)
         {

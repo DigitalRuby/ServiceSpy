@@ -39,18 +39,21 @@ public sealed class UdpNotificationSender : INotificationSender, IDisposable
     }
 
     /// <inheritdoc />
-    public Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken = default)
+    public async Task SendMetadataAsync(IEnumerable<MetadataNotification> events, CancellationToken cancelToken = default)
     {
-        if (lastMetadata is null ||
-            evt.Deleted ||
-            evt.HealthCheck != lastHealthCheck ||
-            !lastMetadata.Equals(evt.Metadata))
+        foreach (var notification in events)
         {
-            lastMetadata = evt.Metadata;
-            lastHealthCheck = evt.HealthCheck;
-            message = CreateMessage(evt.Deleted, evt.HealthCheck);
+            if (lastMetadata is null ||
+                notification.Deleted ||
+                notification.HealthCheck != lastHealthCheck ||
+                !lastMetadata.Equals(notification.Metadata))
+            {
+                lastMetadata = notification.Metadata;
+                lastHealthCheck = notification.HealthCheck;
+                message = CreateMessage(notification.Deleted, notification.HealthCheck);
+            }
+            await SendMessage(message, cancelToken);
         }
-        return SendMessage(message, cancelToken);
     }
 
     private Memory<byte> CreateMessage(bool deletion, string? healthCheck)

@@ -38,10 +38,13 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         // send shutdown/deletion event
-        await handler.SendMetadataAsync(new MetadataNotification
+        await handler.SendMetadataAsync(new MetadataNotification[]
         {
-            Deleted = true,
-            Metadata = metadata
+            new MetadataNotification
+            {
+                Deleted = true,
+                Metadata = metadata
+            }
         }, cancellationToken);
         await base.StopAsync(cancellationToken);
     }
@@ -54,9 +57,12 @@ public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLo
             try
             {
                 // send out our service metadata to the universe
-                await handler.SendMetadataAsync(new MetadataNotification
+                await handler.SendMetadataAsync(new MetadataNotification[]
                 {
-                    Metadata = metadata
+                    new MetadataNotification
+                    {
+                        Metadata = metadata
+                    }
                 }, stoppingToken);
             }
             catch (Exception ex)

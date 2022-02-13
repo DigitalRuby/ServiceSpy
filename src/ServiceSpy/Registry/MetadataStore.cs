@@ -109,12 +109,12 @@ public sealed class MetadataStore : IMetadataStore, IDisposable
     public async Task<IReadOnlyCollection<ServiceMetadata>> GetHealthyMetadatasAsync(bool cache = true, CancellationToken cancelToken = default)
     {
         static async Task AddHealthyMetadatas(List<ServiceMetadata> result, IEnumerable<ServiceMetadata> source,
-            int maxCount, HealthChecks.IMetadataHealthCheckStore healthCheckStore)
+            int maxCount, HealthChecks.IMetadataHealthCheckStore healthCheckStore, CancellationToken cancelToken)
         {
             int count = 0;
             foreach (var item in source)
             {
-                if (await healthCheckStore.GetHealthAsync(item) == string.Empty)
+                if (await healthCheckStore.GetHealthAsync(item, cancelToken) == string.Empty)
                 {
                     result.Add(item);
                     if (++count >= maxCount)
@@ -143,17 +143,17 @@ public sealed class MetadataStore : IMetadataStore, IDisposable
             if (groupCount < 2)
             {
                 // one group - three
-                await AddHealthyMetadatas(result, group, 3, healthCheckStore);
+                await AddHealthyMetadatas(result, group, 3, healthCheckStore, cancelToken);
             }
             else if (groupCount < 3)
             {
                 // two groups - two
-                await AddHealthyMetadatas(result, group, 2, healthCheckStore);
+                await AddHealthyMetadatas(result, group, 2, healthCheckStore, cancelToken);
             }
             else
             {
                 // three+ groups - one
-                await AddHealthyMetadatas(result, group, 1, healthCheckStore);
+                await AddHealthyMetadatas(result, group, 1, healthCheckStore, cancelToken);
             }
         }
 
@@ -172,7 +172,7 @@ public sealed class MetadataStore : IMetadataStore, IDisposable
         // if we have health check info, pass it on
         if (evt.HealthCheck is not null)
         {
-            await healthCheckStore.SetHealthAsync(new[] { (evt.Metadata, evt.HealthCheck) });
+            await healthCheckStore.SetHealthAsync(new[] { (evt.Metadata, evt.HealthCheck) }, cancelToken);
         }
 
         if (evt.Deleted)

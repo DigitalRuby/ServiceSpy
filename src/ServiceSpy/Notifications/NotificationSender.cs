@@ -8,8 +8,8 @@ public interface INotificationSender
     /// <summary>
     /// Send a metadata notification
     /// </summary>
-    /// <param name="evt">Metadata event</param>
+    /// <param name="events">Metadata events</param>
     /// <param name="cancelToken">Cancel token</param>
     /// <returns>Task</returns>
-    Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken = default);
+    Task SendMetadataAsync(IEnumerable<MetadataNotification> events, CancellationToken cancelToken = default);
 }

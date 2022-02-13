@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.Collections.Generic;
+using System.Net.Http;
 using System.Text;
 
 using Moq;
@@ -11,7 +12,7 @@ namespace ServiceSpy.Tests;
 /// Health checks tests
 /// </summary>
 [TestFixture]
-public class HealthChecksTests : INotificationReceiver
+public class HealthChecksTests : INotificationReceiver, INotificationSender
 {
     private class TestHandler : HttpClientHandler
     {
@@ -34,6 +35,12 @@ public class HealthChecksTests : INotificationReceiver
     public event Func<MetadataNotification, CancellationToken, Task>? ReceiveMetadataAsync;
 
 #pragma warning restore
+
+    /// <inheritdoc />
+    public Task SendMetadataAsync(IEnumerable<MetadataNotification> events, CancellationToken cancelToken = default)
+    {
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// One time setup
@@ -65,7 +72,7 @@ public class HealthChecksTests : INotificationReceiver
             new NullLogger<MetadataHealthCheckStore>());
         using MetadataStore metadataStore = new(this, metadataHealthCheckStore);
         using MetadataHealthChecker metadataHealthChecker = new(healthCheckExecutor, metadataStore, metadataHealthCheckStore,
-            TimeSpan.FromMilliseconds(1), new NullLogger<MetadataHealthChecker>());
+            this, TimeSpan.FromMilliseconds(1), new NullLogger<MetadataHealthChecker>());
 
         // start health checking
         await metadataHealthCheckStore.StartAsync(default);

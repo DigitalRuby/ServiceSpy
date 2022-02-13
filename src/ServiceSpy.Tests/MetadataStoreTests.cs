@@ -91,19 +91,22 @@ public sealed class MetadataStoreTests : INotificationSender, INotificationRecei
     public event Func<MetadataNotification, CancellationToken, Task>? ReceiveMetadataAsync;
 
     /// <inheritdoc />
-    public Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results)
+    public Task SetHealthAsync(IEnumerable<(ServiceMetadata metadata, string error)> results, CancellationToken cancelToken = default)
     {
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public Task SendMetadataAsync(MetadataNotification evt, CancellationToken cancelToken = default)
+    public async Task SendMetadataAsync(IEnumerable<MetadataNotification> events, CancellationToken cancelToken = default)
     {
-        return metadataStore!.UpsertAsync(evt.Metadata, cancelToken);
+        foreach (var evt in events)
+        {
+            await metadataStore!.UpsertAsync(evt.Metadata, cancelToken);
+        }
     }
 
     /// <inheritdoc />
-    public Task<string?> GetHealthAsync(ServiceMetadata metadata)
+    public Task<string?> GetHealthAsync(ServiceMetadata metadata, CancellationToken cancelToken = default)
     {
         return Task.FromResult<string?>(null);
     }

@@ -41,7 +41,13 @@ public sealed class UdpNotificationsTests
         using var sender = new UdpNotificationSender(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationSender>());
         for (int i = 0; i < iterations; i++)
         {
-            await sender.SendMetadataAsync(new MetadataNotification { Metadata = metadata }, default);
+            await sender.SendMetadataAsync(new MetadataNotification[]
+            {
+                new MetadataNotification
+                {
+                    Metadata = metadata
+                }
+            });
             await Task.Delay(20);
         }
         Console.WriteLine("Received {0}/{1} udp notifications", count, iterations);
