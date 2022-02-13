@@ -61,7 +61,7 @@ public class HealthChecksTests : INotificationReceiver
             new NullLogger<MetadataHealthCheckStore>());
         using MetadataStore metadataStore = new(this, metadataHealthCheckStore);
         using MetadataHealthChecker metadataHealthChecker = new(healthCheckExecutor, metadataStore, metadataHealthCheckStore,
-            TimeSpan.FromMilliseconds(20), new NullLogger<MetadataHealthChecker>());
+            TimeSpan.FromMilliseconds(1), new NullLogger<MetadataHealthChecker>());
 
         // start health checking
         await metadataHealthCheckStore.StartAsync(default);
@@ -74,12 +74,12 @@ public class HealthChecksTests : INotificationReceiver
 
         // test that we transition to bad health
         handler.Response = new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError) { Content = new StringContent("Ruh roh", Encoding.UTF8, "text/plain") };
-        await Task.Delay(500);
+        await Task.Delay(100);
         var health = await metadataHealthCheckStore.GetHealthAsync(metadata);
         Assert.AreEqual("Ruh roh", health);
 
         // test that we stay in bad health
-        await Task.Delay(500);
+        await Task.Delay(100);
         health = await metadataHealthCheckStore.GetHealthAsync(metadata);
         Assert.AreEqual("Ruh roh", health);
 
@@ -91,7 +91,7 @@ public class HealthChecksTests : INotificationReceiver
 
         // test metadata drops out if no health checks
         await metadataStore.RemoveAsync(metadata);
-        await Task.Delay(500);
+        await Task.Delay(300);
         health = await metadataHealthCheckStore.GetHealthAsync(metadata);
         Assert.IsNull(health);
     }
