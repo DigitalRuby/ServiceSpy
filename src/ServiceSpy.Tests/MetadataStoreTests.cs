@@ -78,7 +78,7 @@ public sealed class MetadataStoreTests : INotificationSender, INotificationRecei
     public async Task TestServiceRegistrationLoop()
     {
         var metadata1 = TestUtil.CreateMetadata();
-        using ServiceRegistrationLoop loop = new(metadata1, this, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
+        using ServiceRegistrationLoop loop = new(new[] { metadata1 }, this, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
         await loop.StartAsync(default);
         await Task.Delay(100);
         var all = await metadataStore!.GetMetadatasAsync();

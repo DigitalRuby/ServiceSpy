@@ -75,7 +75,7 @@ public sealed class UdpNotificationsTests
             return Task.CompletedTask;
         };
         await receiver.StartAsync(default);
-        ServiceRegistrationLoop loop = new(metadata, sender, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
+        ServiceRegistrationLoop loop = new(new[] { metadata }, sender, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
         await loop.StartAsync(default);
         await Task.Delay(100);
         var all = await store.GetMetadatasAsync();

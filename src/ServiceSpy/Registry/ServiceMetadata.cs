@@ -5,6 +5,9 @@
 /// </summary>
 public sealed class ServiceMetadata
 {
+    internal static readonly string defaultVersion = System.Reflection.Assembly.GetEntryAssembly()!.GetName().Version?.ToString(3) ?? "1.0.0";
+    internal static readonly byte[] serviceSpyServiceMetadataGuid = Guid.Parse("62573135-7B6A-4FAC-B765-9BE43E83E444").ToByteArray();
+
     /// <summary>
     /// Id
     /// </summary>
@@ -16,9 +19,9 @@ public sealed class ServiceMetadata
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// Version
+    /// Version - default is executing assembly version
     /// </summary>
-    public string Version { get; init; } = string.Empty;
+    public string Version { get; init; } = defaultVersion;
 
     /// <summary>
     /// Group - this would usually represent an availability zone, region or general geo location
@@ -28,7 +31,16 @@ public sealed class ServiceMetadata
     /// <summary>
     /// IP address
     /// </summary>
-    public System.Net.IPAddress IPAddress { get; init; } = System.Net.IPAddress.Any;
+    public System.Net.IPAddress IPAddress { get; set; } = System.Net.IPAddress.Any;
+
+    /// <summary>
+    /// Get/set IPAddress as string
+    /// </summary>
+    public string IPAddressString
+    {
+        get => IPAddress.ToString();
+        set => IPAddress = System.Net.IPAddress.Parse(value);
+    }
 
     /// <summary>
     /// Port
@@ -126,7 +138,7 @@ public sealed class ServiceMetadata
         if (serviceSpyGuidLength == 16)
         {
             var serviceSpyGuidBytes = reader.ReadBytes(serviceSpyGuidLength);
-            if (serviceSpyGuidBytes.SequenceEqual(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid))
+            if (serviceSpyGuidBytes.SequenceEqual(serviceSpyServiceMetadataGuid))
             {
                 var version = reader.Read7BitEncodedInt();
 
@@ -219,8 +231,8 @@ public sealed class ServiceMetadata
     public void ToBinary(Stream s, bool deletion = false, string? healthCheck = null)
     {
         BinaryWriter writer = new(s, Encoding.UTF8);
-        writer.Write7BitEncodedInt(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid.Length);
-        writer.Write(Notifications.Udp.UdpNotificationSender.serviceSpyServiceMetadataGuid);
+        writer.Write7BitEncodedInt(serviceSpyServiceMetadataGuid.Length);
+        writer.Write(serviceSpyServiceMetadataGuid);
         writer.Write7BitEncodedInt(1); // version
         var guidBytes = Id.ToByteArray();
         writer.Write7BitEncodedInt(guidBytes.Length); // id length
