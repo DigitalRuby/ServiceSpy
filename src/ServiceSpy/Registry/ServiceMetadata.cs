@@ -39,7 +39,7 @@ public sealed class ServiceMetadata
     public string IPAddressString
     {
         get => IPAddress.ToString();
-        set => IPAddress = System.Net.IPAddress.Parse(value);
+        set => IPAddress = (string.IsNullOrWhiteSpace(value) || value == "*" ? GetLocalIPAddress() : System.Net.IPAddress.Parse(value));
     }
 
     /// <summary>
@@ -249,5 +249,38 @@ public sealed class ServiceMetadata
         writer.Write(Host); // host length + host bytes
         writer.Write(Path); // path length + path bytes
         writer.Write(HealthCheckPath); // health check path length + health check path bytes
+    }
+
+    /// <summary>
+    /// Get local machine ip
+    /// </summary>
+    /// <returns>Local machine ip</returns>
+    /// <exception cref="ApplicationException">Failed to find local ip</exception>
+    public static System.Net.IPAddress GetLocalIPAddress()
+    {
+        // try ipv4
+        using (System.Net.Sockets.Socket socket = new(System.Net.Sockets.AddressFamily.InterNetwork, System.Net.Sockets.SocketType.Dgram, 0))
+        {
+            socket.Connect("8.8.8.8", 65530);
+            var endPoint = socket.LocalEndPoint as System.Net.IPEndPoint;
+            if (endPoint is not null)
+            {
+                return endPoint.Address;
+            }
+        }
+
+        // try ipv6
+        using (System.Net.Sockets.Socket socket = new(System.Net.Sockets.AddressFamily.InterNetworkV6, System.Net.Sockets.SocketType.Dgram, 0))
+        {
+            socket.Connect("2001:4860:4860::8888", 65530);
+            var endPoint = socket.LocalEndPoint as System.Net.IPEndPoint;
+            if (endPoint is not null)
+            {
+                return endPoint.Address;
+            }
+        }
+
+        // ruh roh
+        throw new ApplicationException("No network adapters with an IPv4 or IPv6 address on the system");
     }
 }
