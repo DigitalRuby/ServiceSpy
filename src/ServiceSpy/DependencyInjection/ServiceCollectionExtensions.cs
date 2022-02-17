@@ -53,7 +53,7 @@ public static class ServiceCollectionExtensions
             serviceSpyConfig.Notifications.Connection.Protocol.Equals("udp", StringComparison.OrdinalIgnoreCase))
         {
             // receive notifications
-            IPEndPoint endPoint = new(System.Net.IPAddress.Parse(serviceSpyConfig.Notifications.Connection.IPAddress), serviceSpyConfig.Notifications.Connection.Port);
+            IPEndPoint endPoint = new(serviceSpyConfig.Notifications.Connection.ParsedIPAddress, serviceSpyConfig.Notifications.Connection.Port);
             services.AddSingleton<INotificationReceiver>(provider => new UdpNotificationReceiver(endPoint, provider.GetRequiredService<ILogger<UdpNotificationReceiver>>()));
 
             // send notifications

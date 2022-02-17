@@ -101,6 +101,12 @@ public class ServiceSpyConnection
     public string IPAddress { get; set; } = string.Empty;
 
     /// <summary>
+    /// Get parsed ip address from IPAddress property
+    /// </summary>
+    public System.Net.IPAddress ParsedIPAddress =>
+        (string.IsNullOrWhiteSpace(IPAddress) || IPAddress == "*" ? ServiceMetadata.GetLocalIPAddress() : System.Net.IPAddress.Parse(IPAddress));
+
+    /// <summary>
     /// Port
     /// </summary>
     public int Port { get; set; }
