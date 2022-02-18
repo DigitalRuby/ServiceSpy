@@ -34,7 +34,7 @@ public class ServiceSpyServices
     /// <summary>
     /// Services
     /// </summary>
-    public IReadOnlyCollection<ServiceMetadata> Items { get; set; } = Array.Empty<ServiceMetadata>();
+    public ServiceMetadata[] Items { get; set; } = Array.Empty<ServiceMetadata>();
 }
 
 /// <summary>

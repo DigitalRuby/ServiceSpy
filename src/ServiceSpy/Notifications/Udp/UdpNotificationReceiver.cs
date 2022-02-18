@@ -55,6 +55,7 @@ public sealed class UdpNotificationReceiver : BackgroundService, INotificationRe
                         var newMetadata = ServiceMetadata.FromBinary(ms, out bool deletion, out string? healthCheck);
                         if (newMetadata is not null)
                         {
+                            logger.LogDebug("Received metadata: " + newMetadata);
                             ReceiveMetadataAsync?.Invoke(new MetadataNotification
                             {
                                 Metadata = newMetadata,

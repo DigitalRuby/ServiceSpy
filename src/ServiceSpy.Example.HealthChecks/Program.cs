@@ -5,6 +5,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
+builder.Services.AddHttpClient(ServiceSpy.HealthChecks.HealthCheckExecutor.HealthCheckExecutorKey, client =>
+{
+});
 
 // add service discovery and notifications:
 //  configuration will only send out health check notifications and only receive service metadata notifications

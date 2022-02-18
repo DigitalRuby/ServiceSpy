@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IMetadataHealthCheckStore>(provider => new MetadataHealthCheckStore(TimeSpan.FromSeconds(serviceSpyConfig.HealthChecks.CleanupInterval),
                 TimeSpan.FromSeconds(serviceSpyConfig.HealthChecks.CleanupInterval),
                 provider.GetRequiredService<ILogger<MetadataHealthCheckStore>>()));
+            services.AddHostedService<MetadataHealthCheckStore>(provider => (MetadataHealthCheckStore)provider.GetRequiredService<IMetadataHealthCheckStore>());
         }
 
         // add send/receive
@@ -55,31 +56,36 @@ public static class ServiceCollectionExtensions
             // receive notifications
             IPEndPoint endPoint = new(serviceSpyConfig.Notifications.Connection.ParsedIPAddress, serviceSpyConfig.Notifications.Connection.Port);
             services.AddSingleton<INotificationReceiver>(provider => new UdpNotificationReceiver(endPoint, provider.GetRequiredService<ILogger<UdpNotificationReceiver>>()));
+            services.AddHostedService<UdpNotificationReceiver>(provider => (UdpNotificationReceiver)provider.GetRequiredService<INotificationReceiver>());
 
             // send notifications
             services.AddSingleton<INotificationSender>(provider => new UdpNotificationSender(endPoint, provider.GetRequiredService<ILogger<UdpNotificationSender>>()));
         }
 
-        // if we are broadcasting notifications, do this now
+        // if we are broadcasting notifications, setup the broadcast loop
         if (serviceSpyConfig.Notifications.BroadcastInterval > 0)
         {
             services.AddSingleton<IServiceRegistrationLoop>(provider => new ServiceRegistrationLoop(serviceSpyConfig.Services.Items,
                 provider.GetRequiredService<INotificationSender>(),
                 TimeSpan.FromSeconds(serviceSpyConfig.Notifications.BroadcastInterval),
                 provider.GetRequiredService<ILogger<ServiceRegistrationLoop>>()));
+            services.AddHostedService<ServiceRegistrationLoop>(provider => (ServiceRegistrationLoop)provider.GetRequiredService<IServiceRegistrationLoop>());
         }
 
         // perform health checks if configured
         if (serviceSpyConfig.HealthChecks.HealthCheckInterval > 0)
         {
+            // health check implementation
             services.AddSingleton<IHealthCheckExecutor>(provider => new HealthCheckExecutor(provider.GetRequiredService<IHttpClientFactory>()));
+
+            // health check loop
             services.AddSingleton<IMetadataHealthChecker>(provider => new MetadataHealthChecker(provider.GetRequiredService<IHealthCheckExecutor>(),
                 provider.GetRequiredService<IMetadataStore>(),
                 provider.GetRequiredService<IMetadataHealthCheckStore>(),
                 provider.GetRequiredService<INotificationSender>(),
                 TimeSpan.FromSeconds(serviceSpyConfig.HealthChecks.HealthCheckInterval),
                 provider.GetRequiredService<ILogger<MetadataHealthChecker>>()));
-
+            services.AddHostedService<MetadataHealthChecker>(provider => (MetadataHealthChecker)provider.GetRequiredService<IMetadataHealthChecker>());
         }
         return services;
     }

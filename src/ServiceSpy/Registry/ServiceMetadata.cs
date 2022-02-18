@@ -82,6 +82,12 @@ public sealed class ServiceMetadata
     }
 
     /// <inheritdoc />
+    public override string ToString()
+    {
+        return $"{Id}: {Name}, {Version}, {Group}, {IPAddress}, {Port}, {Host}, {Path}, {HealthCheckPath}";
+    }
+
+    /// <inheritdoc />
     public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj)
     {
         if (obj is not ServiceMetadata otherServiceMetadata)

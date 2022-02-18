@@ -7,7 +7,6 @@ public interface IServiceRegistrationLoop : IDisposable
 {
 }
 
-
 /// <inheritdoc />
 public class ServiceRegistrationLoop : BackgroundService, IServiceRegistrationLoop
 {
