@@ -53,13 +53,11 @@ public static class ServiceCollectionExtensions
         if (string.IsNullOrWhiteSpace(serviceSpyConfig.Notifications.Connection.Protocol) ||
             serviceSpyConfig.Notifications.Connection.Protocol.Equals("udp", StringComparison.OrdinalIgnoreCase))
         {
-            // receive notifications
+            // send and receive notifications
             IPEndPoint endPoint = new(serviceSpyConfig.Notifications.Connection.ParsedIPAddress, serviceSpyConfig.Notifications.Connection.Port);
-            services.AddSingleton<INotificationReceiver>(provider => new UdpNotificationReceiver(endPoint, provider.GetRequiredService<ILogger<UdpNotificationReceiver>>()));
-            services.AddHostedService<UdpNotificationReceiver>(provider => (UdpNotificationReceiver)provider.GetRequiredService<INotificationReceiver>());
-
-            // send notifications
-            services.AddSingleton<INotificationSender>(provider => new UdpNotificationSender(endPoint, provider.GetRequiredService<ILogger<UdpNotificationSender>>()));
+            services.AddSingleton<INotificationReceiver>(provider => new UdpNotificationHandler(endPoint, false, provider.GetRequiredService<ILogger<UdpNotificationHandler>>()));
+            services.AddSingleton<INotificationSender>(provider => (UdpNotificationHandler)provider.GetRequiredService<INotificationReceiver>());
+            services.AddHostedService<UdpNotificationHandler>(provider => (UdpNotificationHandler)provider.GetRequiredService<INotificationReceiver>());
         }
 
         // if we are broadcasting notifications, setup the broadcast loop

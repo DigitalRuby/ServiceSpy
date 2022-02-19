@@ -38,8 +38,10 @@ public class HealthCheckExecutor : IHealthCheckExecutor
     {
         try
         {
-            var url = (metadata.Port == 80 ? "http://" : "https://") + metadata.Host + metadata.HealthCheckPath +
-                (metadata.Port != 80 && metadata.Port != 443 ? ":" + metadata.Port : string.Empty);
+            var url = (metadata.Port == 80 || metadata.Host.StartsWith("127.0.0.") ? "http://" : "https://") +
+                metadata.Host +
+                (metadata.Port != 80 && metadata.Port != 443 ? ":" + metadata.Port : string.Empty) +
+                metadata.HealthCheckPath;
             var msg = new HttpRequestMessage(HttpMethod.Get, url);
             var result = await client.SendAsync(msg, cancelToken);
             if (result.IsSuccessStatusCode)

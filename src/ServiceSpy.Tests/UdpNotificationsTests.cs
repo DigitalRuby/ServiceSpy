@@ -28,8 +28,8 @@ public sealed class UdpNotificationsTests
         ServiceMetadata? foundMetadata = null;
         bool deleted = false;
         string? healthCheck = null;
-        using var receiver = new UdpNotificationReceiver(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationReceiver>());
-        receiver.ReceiveMetadataAsync += (MetadataNotification n, CancellationToken t) =>
+        using var handler = new UdpNotificationHandler(new System.Net.IPEndPoint(localHost, port), true, new NullLogger<UdpNotificationHandler>());
+        handler.ReceiveMetadataAsync += (MetadataNotification n, CancellationToken t) =>
         {
             Interlocked.Increment(ref count);
             deleted = n.Deleted;
@@ -37,11 +37,10 @@ public sealed class UdpNotificationsTests
             foundMetadata = n.Metadata;
             return Task.CompletedTask;
         };
-        await receiver.StartAsync(default);
-        using var sender = new UdpNotificationSender(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationSender>());
+        await handler.StartAsync(default);
         for (int i = 0; i < iterations; i++)
         {
-            await sender.SendMetadataAsync(new MetadataNotification[]
+            await handler.SendMetadataAsync(new MetadataNotification[]
             {
                 new MetadataNotification
                 {
@@ -65,17 +64,16 @@ public sealed class UdpNotificationsTests
     public async Task TestServiceLoopRegistrationUdp()
     {
         ServiceMetadata metadata = TestUtil.CreateMetadata();
-        UdpNotificationSender sender = new(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationSender>());
-        UdpNotificationReceiver receiver = new(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationReceiver>());
+        UdpNotificationHandler handler = new(new System.Net.IPEndPoint(localHost, port), true, new NullLogger<UdpNotificationHandler>());
         HealthChecks.MetadataHealthCheckStore healthCheckStore = new(TimeSpan.FromMilliseconds(20), TimeSpan.FromMilliseconds(100),
             new NullLogger<HealthChecks.MetadataHealthCheckStore>());
-        MetadataStore store = new(receiver, healthCheckStore);
-        receiver.ReceiveMetadataAsync += (MetadataNotification arg1, CancellationToken arg2) =>
+        MetadataStore store = new(handler, healthCheckStore);
+        handler.ReceiveMetadataAsync += (MetadataNotification arg1, CancellationToken arg2) =>
         {
             return Task.CompletedTask;
         };
-        await receiver.StartAsync(default);
-        ServiceRegistrationLoop loop = new(new[] { metadata }, sender, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
+        await handler.StartAsync(default);
+        ServiceRegistrationLoop loop = new(new[] { metadata }, handler, TimeSpan.FromMilliseconds(20), new NullLogger<ServiceRegistrationLoop>());
         await loop.StartAsync(default);
         await Task.Delay(100);
         var all = await store.GetMetadatasAsync();

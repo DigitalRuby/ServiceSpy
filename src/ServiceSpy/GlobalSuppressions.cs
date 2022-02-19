@@ -5,4 +5,5 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "No Thanks", Scope = "member", Target = "~M:ServiceSpy.Notifications.Udp.UdpNotificationReceiver.ExecuteAsync(System.Threading.CancellationToken)~System.Threading.Tasks.Task")]
+[assembly: SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "No Thanks", Scope = "member", Target = "~M:ServiceSpy.Notifications.Udp.UdpNotificationHandler.ExecuteAsync(System.Threading.CancellationToken)~System.Threading.Tasks.Task")]
+[assembly: SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "No thanks", Scope = "member", Target = "~M:ServiceSpy.Notifications.Udp.UdpNotificationHandler.SendMetadataAsync(System.Collections.Generic.IEnumerable{ServiceSpy.Notifications.MetadataNotification},System.Threading.CancellationToken)~System.Threading.Tasks.Task")]
