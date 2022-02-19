@@ -50,7 +50,8 @@ public sealed class UdpNotificationHandler : BackgroundService, INotificationRec
                 message = CreateMessage(notification.Deleted, notification.HealthCheck);
             }
 
-            logger.LogDebug("Sending metadata: " + lastMetadata + ", deleted: " + notification.Deleted + ", health-check: " + notification.HealthCheck);
+            logger.LogDebug("Sending metadata: " + lastMetadata + ", deleted: " + notification.Deleted +
+                ", health-check: " + (notification.HealthCheck == null ? "N/A" : (notification.HealthCheck == string.Empty ? "OK" : notification.HealthCheck)));
             await SendMessage(message, cancelToken);
         }
     }
@@ -91,7 +92,8 @@ public sealed class UdpNotificationHandler : BackgroundService, INotificationRec
                         var newMetadata = ServiceMetadata.FromBinary(ms, out bool deletion, out string? healthCheck);
                         if (newMetadata is not null)
                         {
-                            logger.LogDebug("Received metadata: " + newMetadata + ", deleted: " + deletion + ", health check: " + healthCheck);
+                            logger.LogDebug("Received metadata: " + newMetadata + ", deleted: " + deletion +
+                                ", health-check: " + (healthCheck == null ? "N/A" : (healthCheck == string.Empty ? "OK" : healthCheck)));
                             ReceiveMetadataAsync?.Invoke(new MetadataNotification
                             {
                                 Metadata = newMetadata,
