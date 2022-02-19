@@ -17,7 +17,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/DigitalRuby/ServiceSpy</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>C#;microservices;discovery;udp;health-checks</PackageTags>
+		<PackageTags>C#;microservices;service;discovery;udp;health-checks</PackageTags>
 		<PackageReleaseNotes>Initial Version</PackageReleaseNotes>
 		<AssemblyVersion>1.0.0</AssemblyVersion>
 		<FileVersion>1.0.0</FileVersion>
