@@ -85,7 +85,7 @@ public sealed class MetadataHealthChecker : BackgroundService, IMetadataHealthCh
         var metadatas = await metadataStore.GetMetadatasAsync(cancelToken: cancelToken);
 
         // perform health checks in parallel
-        foreach (var metadata in metadatas)
+        foreach (var metadata in metadatas.Where(m => !string.IsNullOrWhiteSpace(m.HealthCheckPath)))
         {
             tasks.Add(healthChecker.ExecuteAsync(metadata, cancelToken));
         }

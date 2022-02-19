@@ -11,7 +11,6 @@ public sealed class UdpNotificationHandler : BackgroundService, INotificationRec
     private readonly IPEndPoint ipEndPointBind;
     //private readonly IPEndPoint ipEndPointReceive;
     private readonly IPEndPoint ipEndPointSend;
-    private readonly bool loopback;
     private readonly ILogger logger;
 
     private UdpClient? udpClient;
@@ -23,14 +22,12 @@ public sealed class UdpNotificationHandler : BackgroundService, INotificationRec
     /// Constructor
     /// </summary>
     /// <param name="ipEndPoint">End point to bind to</param>
-    /// <param name="loopback">Whether to loopback broadcasts</param>
     /// <param name="logger">Logger</param>
-    public UdpNotificationHandler(IPEndPoint ipEndPoint, bool loopback, ILogger<UdpNotificationHandler> logger)
+    public UdpNotificationHandler(IPEndPoint ipEndPoint, ILogger<UdpNotificationHandler> logger)
     {
         this.ipEndPointBind = ipEndPoint;
         //this.ipEndPointReceive = new(0, 0);
         this.ipEndPointSend = new(IPAddress.Broadcast, ipEndPoint.Port);
-        this.loopback = loopback;
         this.logger = logger;
         CreateUdpClient();
     }
@@ -196,7 +193,11 @@ public sealed class UdpNotificationHandler : BackgroundService, INotificationRec
 
             try
             {
-                udpClient = new UdpClient() { EnableBroadcast = true, MulticastLoopback = loopback };
+                udpClient = new UdpClient()
+                {
+                    EnableBroadcast = true,
+                    MulticastLoopback = true
+                };
                 udpClient.Client.Bind(ipEndPointBind);
             }
             catch (Exception ex)

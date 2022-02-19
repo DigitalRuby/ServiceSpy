@@ -28,7 +28,7 @@ public sealed class UdpNotificationsTests
         ServiceMetadata? foundMetadata = null;
         bool deleted = false;
         string? healthCheck = null;
-        using var handler = new UdpNotificationHandler(new System.Net.IPEndPoint(localHost, port), true, new NullLogger<UdpNotificationHandler>());
+        using var handler = new UdpNotificationHandler(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationHandler>());
         handler.ReceiveMetadataAsync += (MetadataNotification n, CancellationToken t) =>
         {
             Interlocked.Increment(ref count);
@@ -64,7 +64,7 @@ public sealed class UdpNotificationsTests
     public async Task TestServiceLoopRegistrationUdp()
     {
         ServiceMetadata metadata = TestUtil.CreateMetadata();
-        UdpNotificationHandler handler = new(new System.Net.IPEndPoint(localHost, port), true, new NullLogger<UdpNotificationHandler>());
+        UdpNotificationHandler handler = new(new System.Net.IPEndPoint(localHost, port), new NullLogger<UdpNotificationHandler>());
         HealthChecks.MetadataHealthCheckStore healthCheckStore = new(TimeSpan.FromMilliseconds(20), TimeSpan.FromMilliseconds(100),
             new NullLogger<HealthChecks.MetadataHealthCheckStore>());
         MetadataStore store = new(handler, healthCheckStore);

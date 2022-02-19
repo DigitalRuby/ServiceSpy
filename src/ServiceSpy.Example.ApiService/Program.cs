@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
+builder.Services.AddControllers();
 
 // add service discovery and notifications:
 //  configuration will only receive health check notifications and send/receive service metadata notifications
@@ -24,4 +25,5 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHealthChecks("/health-check");
+app.MapControllers();
 app.Run();

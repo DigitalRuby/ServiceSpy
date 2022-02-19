@@ -1,16 +1,14 @@
-﻿{
-    "profiles":
-    {
-        "ServiceSpy.Example.ApiService":
-        {
-            "commandName": "Project",
-            "dotnetRunMessages": true,
-            "launchBrowser": true,
-            "applicationUrl": "http://127.0.0.1:7172",
-            "environmentVariables":
-            {
-                "ASPNETCORE_ENVIRONMENT": "Development"
-            }
-        }
+{
+  "profiles": {
+    "ServiceSpy.Example.ApiService": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "test/test",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://127.0.0.1:7172",
+      "dotnetRunMessages": true
     }
+  }
 }

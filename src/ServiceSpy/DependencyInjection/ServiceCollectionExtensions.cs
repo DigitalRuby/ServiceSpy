@@ -55,7 +55,7 @@ public static class ServiceCollectionExtensions
         {
             // send and receive notifications
             IPEndPoint endPoint = new(serviceSpyConfig.Notifications.Connection.ParsedIPAddress, serviceSpyConfig.Notifications.Connection.Port);
-            services.AddSingleton<INotificationReceiver>(provider => new UdpNotificationHandler(endPoint, false, provider.GetRequiredService<ILogger<UdpNotificationHandler>>()));
+            services.AddSingleton<INotificationReceiver>(provider => new UdpNotificationHandler(endPoint, provider.GetRequiredService<ILogger<UdpNotificationHandler>>()));
             services.AddSingleton<INotificationSender>(provider => (UdpNotificationHandler)provider.GetRequiredService<INotificationReceiver>());
             services.AddHostedService<UdpNotificationHandler>(provider => (UdpNotificationHandler)provider.GetRequiredService<INotificationReceiver>());
         }
