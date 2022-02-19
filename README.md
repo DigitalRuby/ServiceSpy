@@ -43,7 +43,7 @@ Health check status is also stored in memory on each service. Any service perfor
 
 Health checks can be setup to be performed from each service to every other service, or from dedicated health check services.
 
-Health checks are defind in appsettings.json as follows:
+Health checks are defined in appsettings.json as follows:
 
 ```
 "ServiceSpy":
