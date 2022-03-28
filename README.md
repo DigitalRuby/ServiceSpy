@@ -1,4 +1,4 @@
-# Service Spy - Dead Simple Service Discovery #
+# Service Spy - Simple Decentralized and Distributed Service Discovery #
 
 [![Github Sponsorship](.github/github_sponsor_btn.svg)](https://github.com/sponsors/jjxtra)
 
